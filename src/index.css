@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─────────────────────────────────────────────── */
+:root {
+  --color-bg:           #0d1117;
+  --color-surface:      #161b22;
+  --color-surface-alt:  #1f2937;
+  --color-border:       #30363d;
+  --color-primary:      #f0b429;
+  --color-primary-dim:  #92660c;
+  --color-text:         #e6edf3;
+  --color-text-muted:   #8b949e;
+  --color-text-faint:   #484f58;
+  --color-bull:         #3fb950;
+  --color-bear:         #f85149;
+  --color-neutral:      #58a6ff;
+  --color-warn:         #d29922;
+  --color-success:      #3fb950;
+  --color-error:        #f85149;
+
+  /* Chart-specific colors */
+  --chart-histogram-base:  rgba(88, 166, 255, 0.85);
+  --chart-histogram-bear:  rgba(248, 81, 73, 0.85);
+  --chart-histogram-bull:  rgba(248, 81, 73, 0.65);
+  --chart-line-mean:       #f0b429;
+  --chart-line-median:     #58a6ff;
+  --chart-line-current:    #e6edf3;
+}
+
+/* ─── Global Base Styles ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Typography Utilities ───────────────────────────────────────────────── */
+.font-data {
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+.text-11 { font-size: 11px; }
+.text-12 { font-size: 12px; }
+.text-13 { font-size: 13px; }
+.text-16 { font-size: 16px; }
+.text-20 { font-size: 20px; }
+.text-28 { font-size: 28px; }
+
+/* ─── Scrollbar Styling ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ─── Input Base Styles ──────────────────────────────────────────────────── */
+.mc-input {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  color: var(--color-text);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 13px;
+  padding: 6px 10px;
+  width: 100%;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  outline: none;
+}
+
+.mc-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(240, 180, 41, 0.2);
+}
+
+.mc-input::placeholder {
+  color: var(--color-text-faint);
+}
+
+.mc-input.error {
+  border-color: var(--color-error);
+}
+
+/* ─── Range Slider ───────────────────────────────────────────────────────── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-bg);
+  transition: transform 100ms ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-bg);
+}
+
+/* ─── Run Button Animation ───────────────────────────────────────────────── */
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 180, 41, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(240, 180, 41, 0); }
+}
+
+.btn-run-pulsing {
+  animation: pulse-amber 1s ease-in-out infinite;
+}
+
+/* ─── Histogram Bar Entry Animation ─────────────────────────────────────── */
+@keyframes barGrow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* ─── Panel / Card ───────────────────────────────────────────────────────── */
+.mc-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.mc-card:hover {
+  border-color: rgba(240, 180, 41, 0.2);
+  transition: border-color 200ms ease;
+}
+
+/* ─── Section Accordion ──────────────────────────────────────────────────── */
+.accordion-open {
+  border-left: 2px solid var(--color-primary);
+}
+
+.accordion-closed {
+  border-left: 2px solid var(--color-border);
+}
+
+/* ─── Stat Value Animation ───────────────────────────────────────────────── */
+.stat-value {
+  transition: all 300ms ease-out;
+}
+
+/* ─── Tab Transition ─────────────────────────────────────────────────────── */
+.tab-panel {
+  transition: opacity 200ms ease, transform 200ms ease;
+}

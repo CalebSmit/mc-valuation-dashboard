@@ -194,7 +194,7 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
     onClose();
   };
 
-  const pct = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+  const progressClass = `wizard-progress-fill wizard-progress-fill-step-${step}`;
 
   return (
     <div
@@ -227,7 +227,7 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
 
         {/* ── Progress bar ────────────────────────────────────────── */}
         <div className="wizard-progress-track">
-          <div className="wizard-progress-fill" style={{ width: `${pct}%` }} />
+          <div className={progressClass} />
         </div>
 
         {/* ── Step Content ────────────────────────────────────────── */}

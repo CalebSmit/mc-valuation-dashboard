@@ -134,10 +134,10 @@ export function FanChart() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-1 mb-2">
-        <div className="text-13 font-medium" style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}>
+        <div className="output-chart-title text-13 font-medium">
           Price Path Fan Chart — Percentile Bands
         </div>
-        <div className="text-11" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <div className="output-chart-subtitle text-11">
           5th / 25th / 50th / 75th / 95th percentile price paths across {inputs.projectionYears}-year forecast horizon.
         </div>
       </div>

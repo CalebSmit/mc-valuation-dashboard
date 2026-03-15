@@ -82,13 +82,13 @@ export function TornadoChart() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-1 mb-2">
-        <div className="text-13 font-medium" style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}>
+        <div className="output-chart-title text-13 font-medium">
           Tornado Chart — Input Sensitivity
         </div>
-        <div className="text-11" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <div className="output-chart-subtitle text-11">
           Ranked by |Pearson rank correlation| with implied price.
-          <span style={{ color: CHART_COLORS.tornado }}> Amber = positive</span>,
-          <span style={{ color: CHART_COLORS.tornadoNeg }}> Blue = negative</span>.
+          <span className="output-tone-positive"> Amber = positive</span>,
+          <span className="output-tone-negative"> Blue = negative</span>.
         </div>
       </div>
       <div className="flex-1 relative min-h-0">

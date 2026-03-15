@@ -3,8 +3,10 @@ import { useResultsStore } from '../../store/resultsSlice';
 import { useScenarioStore } from '../../store/scenarioSlice';
 import { EmptyState } from '../shared/EmptyState';
 import { useSimulation } from '../../hooks/useSimulation';
-import { darkChartDefaults, CHART_COLORS } from '../../utils/chartConfig';
+import { darkChartDefaults, CHART_COLORS, LABEL_TIERS } from '../../utils/chartConfig';
 import { formatPrice, formatPercent } from '../../utils/formatters';
+import { resolveLabels } from '../../utils/chartLabelLayout';
+import type { LabelInput } from '../../utils/chartLabelLayout';
 
 // ─── CDFChart ─────────────────────────────────────────────────────────────────
 
@@ -84,40 +86,75 @@ export function CDFChart() {
       const w = chartArea.right - chartArea.left;
       const h = chartArea.bottom - chartArea.top;
 
+      // Build visible lines with pixel positions
+      const visible = refLines
+        .map(ref => {
+          const xRatio = (ref.price - xMin) / (xMax - xMin);
+          const xPx = chartArea.left + xRatio * w;
+          const yRatio = (ref.pct * 100 - yMin) / (yMax - yMin);
+          const yPx = chartArea.bottom - yRatio * h;
+          return { ...ref, xPx, yPx };
+        })
+        .filter(ref => ref.xPx >= chartArea.left && ref.xPx <= chartArea.right);
+
+      // Resolve label positions to avoid overlap
+      const font = '10px DM Mono';
+      const labelInputs: LabelInput[] = visible.map(ref => ({
+        label: `${ref.label} ${formatPrice(ref.price)}`,
+        color: ref.color,
+        xPx: ref.xPx,
+        priority: 2,
+      }));
+      const placements = resolveLabels(labelInputs, ctx, chartArea, font);
+
       ctx.save();
-      for (const ref of refLines) {
-        const xRatio = (ref.price - xMin) / (xMax - xMin);
-        const xPx = chartArea.left + xRatio * w;
-        if (xPx < chartArea.left || xPx > chartArea.right) continue;
 
-        const yRatio = (ref.pct * 100 - yMin) / (yMax - yMin);
-        const yPx = chartArea.bottom - yRatio * h;
-
+      // Draw lines
+      for (const ref of visible) {
         // Vertical line
         ctx.beginPath();
         ctx.strokeStyle = ref.color;
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.moveTo(xPx, chartArea.top);
-        ctx.lineTo(xPx, chartArea.bottom);
+        ctx.moveTo(ref.xPx, chartArea.top);
+        ctx.lineTo(ref.xPx, chartArea.bottom);
         ctx.stroke();
 
         // Horizontal line to y-axis
         ctx.beginPath();
         ctx.setLineDash([2, 4]);
-        ctx.moveTo(chartArea.left, yPx);
-        ctx.lineTo(xPx, yPx);
+        ctx.moveTo(chartArea.left, ref.yPx);
+        ctx.lineTo(ref.xPx, ref.yPx);
         ctx.stroke();
 
-        // Labels
+        // Y-axis percentile label
         ctx.setLineDash([]);
         ctx.fillStyle = ref.color;
-        ctx.font = '10px DM Mono';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${ref.label} ${formatPrice(ref.price)}`, xPx, chartArea.top + 12);
+        ctx.font = font;
         ctx.textAlign = 'right';
-        ctx.fillText(formatPercent(ref.pct), chartArea.left - 2, yPx + 4);
+        ctx.fillText(formatPercent(ref.pct), chartArea.left - 2, ref.yPx + 4);
       }
+
+      // Draw top labels at resolved positions
+      ctx.setLineDash([]);
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      for (const p of placements) {
+        // Leader line when bumped below first tier
+        if (p.labelY > chartArea.top + LABEL_TIERS[0] + 2) {
+          ctx.beginPath();
+          ctx.strokeStyle = p.color;
+          ctx.globalAlpha = 0.4;
+          ctx.lineWidth = 0.75;
+          ctx.moveTo(p.xPx, chartArea.top);
+          ctx.lineTo(p.xPx, p.labelY - 10);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.label, p.labelX, p.labelY);
+      }
+
       ctx.restore();
     },
   };
@@ -158,10 +195,10 @@ export function CDFChart() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-1 mb-2">
-        <div className="text-13 font-medium" style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}>
+        <div className="output-chart-title text-13 font-medium">
           Cumulative Distribution Function
         </div>
-        <div className="text-11" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <div className="output-chart-subtitle text-11">
           Read off any percentile directly. Hover for price → cumulative probability.
         </div>
       </div>

@@ -10,9 +10,10 @@ interface ExportMenuProps {
   onExportCSV?: () => void;
   onExportConfig?: () => void;
   onImportConfig?: (file: File) => Promise<void>;
+  onCopySnapshot?: () => Promise<void>;
 }
 
-export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportConfig }: ExportMenuProps) {
+export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportConfig, onCopySnapshot }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -43,6 +44,12 @@ export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportC
     onExportConfig?.(); setOpen(false);
   };
 
+  const handleSnapshot = async () => {
+    if (!onCopySnapshot || !hasResults) return;
+    setLoading(true); setOpen(false);
+    try { await onCopySnapshot(); } finally { setLoading(false); }
+  };
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onImportConfig) { onImportConfig(file); }
@@ -67,6 +74,7 @@ export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportC
           className="export-menu-panel absolute right-0 mt-1 rounded z-50"
         >
           {[
+            { label: '📋 Copy Snapshot', action: handleSnapshot, disabled: !hasResults || !onCopySnapshot },
             { label: '📄 Export PDF', action: handlePDF, disabled: !hasResults || !onExportPDF },
             { label: '📊 Export CSV', action: handleCSV, disabled: !hasResults || !onExportCSV },
             { label: '💾 Save Config (JSON)', action: handleConfig, disabled: !onExportConfig },

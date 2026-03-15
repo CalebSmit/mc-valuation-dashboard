@@ -15,6 +15,7 @@ export interface ExportHook {
   exportCSV: () => boolean;
   exportConfig: () => boolean;
   importConfig: (file: File) => Promise<{ ok: boolean; error?: string }>;
+  copySnapshot: (activeTab: string) => Promise<boolean>;
 }
 
 // Config snapshot shape saved/loaded via JSON
@@ -279,5 +280,110 @@ export function useExport(): ExportHook {
     }
   }, [loadInputs, loadStressVars, loadConfig, setScenario]);
 
-  return { exportPDF, exportCSV, exportConfig, importConfig };
+  // ── copySnapshot ─────────────────────────────────────────────────────────
+  // Captures the active chart tab and composes a clean image with header + stats,
+  // then copies it to the clipboard as a PNG for pasting into reports.
+  const copySnapshot = useCallback(async (activeTab: string): Promise<boolean> => {
+    if (!output) return false;
+
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+
+      // Capture the chart panel
+      const chartEl = document.getElementById(`tabpanel-${activeTab}`);
+      if (!chartEl) return false;
+
+      const chartCanvas = await html2canvas(chartEl, {
+        backgroundColor: '#161b22',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      // Compose final image on offscreen canvas
+      const padding = 32;
+      const headerH = 52;
+      const statsH = 48;
+      const totalW = chartCanvas.width + padding * 2;
+      const totalH = headerH + chartCanvas.height + statsH + padding * 2;
+
+      const final = document.createElement('canvas');
+      final.width = totalW;
+      final.height = totalH;
+      const fCtx = final.getContext('2d');
+      if (!fCtx) return false;
+
+      // Background
+      fCtx.fillStyle = '#161b22';
+      fCtx.fillRect(0, 0, totalW, totalH);
+
+      // Header: "TICKER — Company Name"
+      fCtx.fillStyle = '#f0b429';
+      fCtx.font = 'bold 28px DM Mono, monospace';
+      const header = inputs.ticker
+        ? `${inputs.ticker} — ${inputs.companyName || 'Analysis'}`
+        : inputs.companyName || 'Monte Carlo Analysis';
+      fCtx.fillText(header, padding, padding + 28);
+
+      // Chart image
+      fCtx.drawImage(chartCanvas, padding, headerH + padding);
+
+      // Stats row at bottom
+      const statsY = headerH + padding + chartCanvas.height + 12;
+      fCtx.font = '20px DM Mono, monospace';
+
+      const formatP = (v: number) => `$${v.toFixed(2)}`;
+      const stats = [
+        `Mean: ${formatP(output.mean)}`,
+        `Median: ${formatP(output.median)}`,
+        `P5: ${formatP(output.percentiles[5])}`,
+        `P95: ${formatP(output.percentiles[95])}`,
+      ];
+
+      let sx = padding;
+      for (const stat of stats) {
+        fCtx.fillStyle = '#8b949e';
+        fCtx.fillText(stat, sx, statsY + 20);
+        sx += fCtx.measureText(stat).width + 48;
+      }
+
+      // Copy to clipboard
+      const blob = await new Promise<Blob | null>(resolve =>
+        final.toBlob(resolve, 'image/png'),
+      );
+      if (!blob) return false;
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ]);
+      return true;
+    } catch (err) {
+      console.error('[copySnapshot]', err);
+
+      // Fallback: download the PNG if clipboard write fails
+      try {
+        const chartEl = document.getElementById(`tabpanel-${activeTab}`);
+        if (!chartEl) return false;
+        const { default: html2canvas } = await import('html2canvas');
+        const canvas = await html2canvas(chartEl, {
+          backgroundColor: '#161b22',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mc-snapshot-${inputs.ticker || 'chart'}-${new Date().toISOString().slice(0, 10)}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }, [output, inputs]);
+
+  return { exportPDF, exportCSV, exportConfig, importConfig, copySnapshot };
 }

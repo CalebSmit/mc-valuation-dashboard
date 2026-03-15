@@ -805,6 +805,37 @@ input[type='range']::-moz-range-thumb {
   margin: 4px 0;
 }
 
+/* ── Snapshot Button ─────────────────────────────────────────────────────── */
+
+.snapshot-btn {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+.snapshot-btn-idle {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+.snapshot-btn-idle:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-faint);
+}
+
+.snapshot-btn-copied {
+  background: rgba(63,185,80,0.12);
+  color: #3fb950;
+  border-color: rgba(63,185,80,0.3);
+}
+
+.snapshot-btn-disabled {
+  background: var(--color-surface);
+  color: var(--color-text-faint);
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
 .empty-state-error-box {
   background: rgba(248,81,73,0.08);
   border: 1px solid var(--color-error);
@@ -1173,6 +1204,12 @@ input[type='range']::-moz-range-thumb {
   border-radius: 0 2px 2px 0;
 }
 
+.wizard-progress-fill-step-1 { width: 0%; }
+.wizard-progress-fill-step-2 { width: 25%; }
+.wizard-progress-fill-step-3 { width: 50%; }
+.wizard-progress-fill-step-4 { width: 75%; }
+.wizard-progress-fill-step-5 { width: 100%; }
+
 .wizard-body {
   flex: 1;
   min-height: 0;
@@ -1428,6 +1465,49 @@ input[type='range']::-moz-range-thumb {
 
 .wizard-btn-submit:hover {
   opacity: 0.9;
+}
+
+/* ─── Output Chart Header + Legend ────────────────────────────────────── */
+.output-chart-title {
+  color: var(--color-text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.output-chart-subtitle {
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.output-chart-subtitle-mono {
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+.output-chart-legend {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.output-legend-label {
+  color: var(--color-text-muted);
+}
+
+.output-legend-swatch-bear {
+  background: var(--chart-histogram-bear);
+}
+
+.output-legend-swatch-base {
+  background: var(--chart-histogram-base);
+}
+
+.output-legend-swatch-bull {
+  background: var(--chart-histogram-bull);
+}
+
+.output-tone-positive {
+  color: #f0b429;
+}
+
+.output-tone-negative {
+  color: #58a6ff;
 }
 
 @media (max-width: 640px) {

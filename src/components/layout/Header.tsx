@@ -17,7 +17,7 @@ export function Header() {
   const { isRunning, progress, runSimulation, abort } = useSimulation();
   const output = useResultsStore(s => s.output);
   const elapsedMs = useResultsStore(s => s.elapsedMs);
-  const { exportPDF, exportCSV, exportConfig, importConfig } = useExport();
+  const { exportPDF, exportCSV, exportConfig, importConfig, copySnapshot } = useExport();
   const [methodOpen, setMethodOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(true);
 
@@ -154,6 +154,12 @@ export function Header() {
         onExportCSV={() => { exportCSV(); }}
         onExportConfig={() => { exportConfig(); }}
         onImportConfig={async (file) => { await importConfig(file); }}
+        onCopySnapshot={async () => {
+          // Find the active tab by checking which tabpanel is rendered
+          const tabs = ['histogram', 'tornado', 'cdf', 'sensitivity', 'fan'];
+          const activeTab = tabs.find(t => document.getElementById(`tabpanel-${t}`)) ?? 'histogram';
+          await copySnapshot(activeTab);
+        }}
       />
 
       {/* ── Run button (compact) ──────────────────────────────────────── */}

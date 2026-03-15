@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useResultsStore } from '../../store/resultsSlice';
 import { useSimulation } from '../../hooks/useSimulation';
+import { useExport } from '../../hooks/useExport';
 import { StatsPanel } from './StatsPanel';
 import { HistogramChart } from './HistogramChart';
 import { TornadoChart } from './TornadoChart';
@@ -27,9 +28,20 @@ const TABS: { key: TabKey; label: string; badge?: string }[] = [
 
 export function OutputTabs() {
   const [activeTab, setActiveTab] = useState<TabKey>('histogram');
+  const [snapshotState, setSnapshotState] = useState<'idle' | 'copying' | 'copied'>('idle');
   const output = useResultsStore(s => s.output);
   const { runSimulation } = useSimulation();
+  const { copySnapshot } = useExport();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleCopySnapshot = useCallback(async () => {
+    setSnapshotState('copying');
+    const ok = await copySnapshot(activeTab);
+    setSnapshotState(ok ? 'copied' : 'idle');
+    if (ok) {
+      setTimeout(() => setSnapshotState('idle'), 2000);
+    }
+  }, [activeTab, copySnapshot]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     let next = index;
@@ -51,61 +63,103 @@ export function OutputTabs() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
-      <div
-        className="output-tabs-bar flex-shrink-0 flex items-center gap-0 border-b px-4 overflow-x-auto overflow-y-hidden"
-        role="tablist"
-        aria-label="Output charts"
-      >
-        {TABS.map((tab, i) => {
-          const isActive = tab.key === activeTab;
-          return (
-            <button
-              key={tab.key}
-              ref={el => { tabRefs.current[i] = el; }}
-              id={`tab-${tab.key}`}
-              role="tab"
-              aria-controls={`tabpanel-${tab.key}`}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => setActiveTab(tab.key)}
-              onKeyDown={e => handleKeyDown(e, i)}
-              className={`output-tab-button relative flex-shrink-0 whitespace-nowrap px-4 py-3 text-12 font-medium transition-colors ${isActive ? 'output-tab-button-active' : 'output-tab-button-inactive'}`}
-              onFocus={e => {
-                if (e.target.matches(':focus-visible')) {
-                  (e.target as HTMLElement).style.outline = '2px solid var(--color-primary)';
-                  (e.target as HTMLElement).style.outlineOffset = '-2px';
-                }
-              }}
-              onBlur={e => {
-                (e.target as HTMLElement).style.outline = 'none';
-              }}
-            >
-              {tab.label}
-              {tab.badge && (
-                <span
-                  className="output-tab-badge ml-1 text-10 px-1 rounded"
-                  title="Deterministic sensitivity — point estimates, not stochastic"
-                >
-                  {tab.badge}
-                </span>
-              )}
-              {/* Active underline */}
-              {isActive && (
-                <span
-                  className="output-tab-underline absolute bottom-0 left-0 right-0 h-0.5"
-                  aria-hidden
-                />
-              )}
-              {/* Indicator dot when data is available */}
-              {output && (
-                <span
-                  className={`ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle ${isActive ? 'output-tab-dot-active' : 'output-tab-dot-inactive'}`}
-                  aria-hidden
-                />
-              )}
-            </button>
-          );
-        })}
+      {/* ── Tab Bar Row ─────────────────────────────────────────────────── */}
+      <div className="output-tabs-bar flex-shrink-0 flex items-center border-b px-4 overflow-x-auto overflow-y-hidden">
+        <div
+          className="flex items-center gap-0"
+          role="tablist"
+          aria-label="Output charts"
+        >
+          {TABS.map((tab, i) => {
+            const isActive = tab.key === activeTab;
+            return (
+              <button
+                key={tab.key}
+                ref={el => { tabRefs.current[i] = el; }}
+                id={`tab-${tab.key}`}
+                role="tab"
+                aria-controls={`tabpanel-${tab.key}`}
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => setActiveTab(tab.key)}
+                onKeyDown={e => handleKeyDown(e, i)}
+                className={`output-tab-button relative flex-shrink-0 whitespace-nowrap px-4 py-3 text-12 font-medium transition-colors ${isActive ? 'output-tab-button-active' : 'output-tab-button-inactive'}`}
+                onFocus={e => {
+                  if (e.target.matches(':focus-visible')) {
+                    (e.target as HTMLElement).style.outline = '2px solid var(--color-primary)';
+                    (e.target as HTMLElement).style.outlineOffset = '-2px';
+                  }
+                }}
+                onBlur={e => {
+                  (e.target as HTMLElement).style.outline = 'none';
+                }}
+              >
+                {tab.label}
+                {tab.badge && (
+                  <span
+                    className="output-tab-badge ml-1 text-10 px-1 rounded"
+                    title="Deterministic sensitivity — point estimates, not stochastic"
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+                {/* Active underline */}
+                {isActive && (
+                  <span
+                    className="output-tab-underline absolute bottom-0 left-0 right-0 h-0.5"
+                    aria-hidden
+                  />
+                )}
+                {/* Indicator dot when data is available */}
+                {output && (
+                  <span
+                    className={`ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle ${isActive ? 'output-tab-dot-active' : 'output-tab-dot-inactive'}`}
+                    aria-hidden
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Copy Snapshot button (outside tablist for ARIA compliance) ── */}
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={handleCopySnapshot}
+          disabled={!output || snapshotState === 'copying'}
+          className={`snapshot-btn flex-shrink-0 whitespace-nowrap px-3 py-2 text-11 rounded flex items-center gap-1.5 transition-colors ${
+            snapshotState === 'copied'
+              ? 'snapshot-btn-copied'
+              : !output
+                ? 'snapshot-btn-disabled'
+                : 'snapshot-btn-idle'
+          }`}
+          title="Copy chart snapshot to clipboard for reports"
+        >
+          {snapshotState === 'copying' ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="animate-spin ui-icon-fixed">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="28" strokeDashoffset="8" fill="none" />
+              </svg>
+              Copying…
+            </>
+          ) : snapshotState === 'copied' ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
+                <path d="M3 8.5 L6.5 12 L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
+                <rect x="5" y="2" width="8" height="10" rx="1" stroke="currentColor" strokeWidth="1.2" fill="none" />
+                <path d="M3 5v8a1 1 0 001 1h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              </svg>
+              Copy Snapshot
+            </>
+          )}
+        </button>
       </div>
 
       {/* ── Tab description ───────────────────────────────────────────────── */}

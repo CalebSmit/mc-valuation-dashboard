@@ -147,3 +147,12 @@ export const CHART_COLORS = {
   fanP50:     '#f0b429',  // median path
   fanFill:    'rgba(88, 166, 255, 0.1)',    // fan shading
 } as const;
+
+// ─── Label Layout Constants ──────────────────────────────────────────────────
+// Used by chartLabelLayout.ts for vertical-tier collision avoidance.
+
+/** Y-offsets from chartArea.top for each label tier */
+export const LABEL_TIERS = [12, 26, 40];
+
+/** Minimum horizontal gap (px) between adjacent labels */
+export const LABEL_H_PADDING = 6;

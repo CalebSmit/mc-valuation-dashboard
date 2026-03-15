@@ -7,8 +7,10 @@ import { useScenarioStore } from '../../store/scenarioSlice';
 import { useInputsStore } from '../../store/inputsSlice';
 import { EmptyState } from '../shared/EmptyState';
 import { useSimulation } from '../../hooks/useSimulation';
-import { CHART_COLORS } from '../../utils/chartConfig';
+import { CHART_COLORS, LABEL_TIERS } from '../../utils/chartConfig';
 import { formatPrice, formatRunCount } from '../../utils/formatters';
+import { resolveLabels } from '../../utils/chartLabelLayout';
+import type { LabelInput } from '../../utils/chartLabelLayout';
 
 // ─── HistogramChart ───────────────────────────────────────────────────────────
 
@@ -48,41 +50,69 @@ export function HistogramChart() {
       const binRange = maxBin - minBin;
 
       const lines = [
-        { value: scenario.bear,  color: CHART_COLORS.bear,    label: `Bear ${formatPrice(scenario.bear)}`,   dash: [4, 4] },
-        { value: scenario.base,  color: CHART_COLORS.base,    label: `Base ${formatPrice(scenario.base)}`,   dash: [4, 4] },
-        { value: scenario.bull,  color: CHART_COLORS.bull,    label: `Bull ${formatPrice(scenario.bull)}`,   dash: [4, 4] },
-        { value: currentPrice,   color: CHART_COLORS.current, label: `Current ${formatPrice(currentPrice)}`, dash: [2, 4] },
-        { value: output.mean,    color: CHART_COLORS.mean,    label: `Mean ${formatPrice(output.mean)}`,     dash: [6, 2] },
-        { value: output.median,  color: CHART_COLORS.median,  label: `Median ${formatPrice(output.median)}`, dash: [6, 2] },
+        { value: scenario.bear,  color: CHART_COLORS.bear,    label: `Bear ${formatPrice(scenario.bear)}`,   dash: [4, 4], priority: 2 },
+        { value: scenario.base,  color: CHART_COLORS.base,    label: `Base ${formatPrice(scenario.base)}`,   dash: [4, 4], priority: 2 },
+        { value: scenario.bull,  color: CHART_COLORS.bull,    label: `Bull ${formatPrice(scenario.bull)}`,   dash: [4, 4], priority: 2 },
+        { value: currentPrice,   color: CHART_COLORS.current, label: `Current ${formatPrice(currentPrice)}`, dash: [2, 4], priority: 1 },
+        { value: output.mean,    color: CHART_COLORS.mean,    label: `Mean ${formatPrice(output.mean)}`,     dash: [6, 2], priority: 0 },
+        { value: output.median,  color: CHART_COLORS.median,  label: `Median ${formatPrice(output.median)}`, dash: [6, 2], priority: 0 },
       ];
 
       const chartArea = chart.chartArea;
       const chartWidth = chartArea.right - chartArea.left;
 
-      ctx.save();
-
+      // Pass 1: compute pixel positions and build label inputs
+      const visibleLines: { xPx: number; color: string; label: string; dash: number[]; priority: number }[] = [];
       for (const line of lines) {
-        // Map price to x pixel position
         const xRatio = (line.value - minBin) / binRange;
         const xPx = chartArea.left + xRatio * chartWidth;
-
         if (xPx < chartArea.left - 10 || xPx > chartArea.right + 10) continue;
+        visibleLines.push({ ...line, xPx });
+      }
 
+      const labelInputs: LabelInput[] = visibleLines.map(l => ({
+        label: l.label,
+        color: l.color,
+        xPx: l.xPx,
+        priority: l.priority,
+      }));
+
+      const font = '10px DM Mono';
+      const placements = resolveLabels(labelInputs, ctx, chartArea, font);
+
+      ctx.save();
+
+      // Pass 2a: draw vertical dashed lines
+      for (const line of visibleLines) {
         ctx.beginPath();
         ctx.strokeStyle = line.color;
         ctx.lineWidth = 1.5;
-        ctx.setLineDash(line.dash ?? [4, 4]);
-        ctx.moveTo(xPx, chartArea.top);
-        ctx.lineTo(xPx, chartArea.bottom);
+        ctx.setLineDash(line.dash);
+        ctx.moveTo(line.xPx, chartArea.top);
+        ctx.lineTo(line.xPx, chartArea.bottom);
         ctx.stroke();
+      }
 
-        // Label at top
-        ctx.setLineDash([]);
-        ctx.fillStyle = line.color;
-        ctx.font = '10px DM Mono';
-        ctx.textAlign = 'center';
-        const labelX = Math.min(Math.max(xPx, chartArea.left + 24), chartArea.right - 24);
-        ctx.fillText(line.label, labelX, chartArea.top + 12);
+      // Pass 2b: draw labels at resolved (non-overlapping) positions
+      ctx.setLineDash([]);
+      ctx.font = font;
+      ctx.textAlign = 'center';
+
+      for (const p of placements) {
+        // Leader line when label is bumped below the first tier
+        if (p.labelY > chartArea.top + LABEL_TIERS[0] + 2) {
+          ctx.beginPath();
+          ctx.strokeStyle = p.color;
+          ctx.globalAlpha = 0.4;
+          ctx.lineWidth = 0.75;
+          ctx.moveTo(p.xPx, chartArea.top);
+          ctx.lineTo(p.xPx, p.labelY - 10);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.label, p.labelX, p.labelY);
       }
 
       ctx.restore();
@@ -99,25 +129,27 @@ export function HistogramChart() {
       {/* Chart header */}
       <div className="flex items-center justify-between px-1 mb-2">
         <div>
-          <div className="text-13 font-medium" style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}>
+          <div className="output-chart-title text-13 font-medium">
             Monte Carlo Distribution — Implied Share Price
           </div>
-          <div className="text-11" style={{ color: 'var(--color-text-muted)', fontFamily: 'DM Mono' }}>
+          <div className="output-chart-subtitle output-chart-subtitle-mono text-11">
             {subtitle}
           </div>
         </div>
         {/* Color legend */}
-        <div className="flex items-center gap-3 text-11" style={{ fontFamily: 'Space Grotesk' }}>
-          {[
-            { color: CHART_COLORS.histBear, label: '< Bear' },
-            { color: CHART_COLORS.histBase, label: 'In Range' },
-            { color: CHART_COLORS.histBull, label: '> Bull' },
-          ].map(l => (
-            <div key={l.label} className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: l.color }} />
-              <span style={{ color: 'var(--color-text-muted)' }}>{l.label}</span>
-            </div>
-          ))}
+        <div className="output-chart-legend flex items-center gap-3 text-11">
+          <div className="flex items-center gap-1">
+            <span className="output-legend-swatch output-legend-swatch-bear inline-block w-3 h-3 rounded-sm" />
+            <span className="output-legend-label">&lt; Bear</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="output-legend-swatch output-legend-swatch-base inline-block w-3 h-3 rounded-sm" />
+            <span className="output-legend-label">In Range</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="output-legend-swatch output-legend-swatch-bull inline-block w-3 h-3 rounded-sm" />
+            <span className="output-legend-label">&gt; Bull</span>
+          </div>
         </div>
       </div>
 

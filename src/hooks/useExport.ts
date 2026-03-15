@@ -303,7 +303,7 @@ export function useExport(): ExportHook {
       // Compose final image on offscreen canvas
       const padding = 32;
       const headerH = 52;
-      const statsH = 48;
+      const statsH = 80;
       const totalW = chartCanvas.width + padding * 2;
       const totalH = headerH + chartCanvas.height + statsH + padding * 2;
 
@@ -328,11 +328,14 @@ export function useExport(): ExportHook {
       // Chart image
       fCtx.drawImage(chartCanvas, padding, headerH + padding);
 
-      // Stats row at bottom
+      // Stats rows at bottom
       const statsY = headerH + padding + chartCanvas.height + 12;
       fCtx.font = '20px DM Mono, monospace';
 
       const formatP = (v: number) => `$${v.toFixed(2)}`;
+      const formatPct = (v: number) => `${(v * 100).toFixed(1)}%`;
+
+      // Row 1: Mean, Median, P5, P95
       const stats = [
         `Mean: ${formatP(output.mean)}`,
         `Median: ${formatP(output.median)}`,
@@ -345,6 +348,20 @@ export function useExport(): ExportHook {
         fCtx.fillStyle = '#8b949e';
         fCtx.fillText(stat, sx, statsY + 20);
         sx += fCtx.measureText(stat).width + 48;
+      }
+
+      // Row 2: Bear / Base / Bull targets with P(>) probabilities
+      const scenarioStats: { label: string; color: string }[] = [
+        { label: `Bear: ${formatP(scenario.bear)}  (P>: ${formatPct(output.probAboveBear)})`, color: '#f85149' },
+        { label: `Base: ${formatP(scenario.base)}  (P>: ${formatPct(output.probAboveBase)})`, color: '#8b949e' },
+        { label: `Bull: ${formatP(scenario.bull)}  (P>: ${formatPct(output.probAboveBull)})`, color: '#3fb950' },
+      ];
+
+      let sx2 = padding;
+      for (const s of scenarioStats) {
+        fCtx.fillStyle = s.color;
+        fCtx.fillText(s.label, sx2, statsY + 50);
+        sx2 += fCtx.measureText(s.label).width + 48;
       }
 
       // Copy to clipboard

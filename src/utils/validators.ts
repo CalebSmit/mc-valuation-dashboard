@@ -62,6 +62,8 @@ export function validateInputs(
   // ── Stress Variables ──
 
   for (const v of stressVars) {
+    if (!v.enabled) continue;
+
     const prefix = `stressVar.${v.id}`;
 
     // Standard deviation must be non-negative
@@ -95,12 +97,23 @@ export function validateInputs(
     }
   }
 
-  // ── WACC vs TGR Warning (non-blocking — user can override) ──
+  // ── WACC vs TGR — blocking error when mean WACC ≤ mean TGR ──
+  // When the mean inputs violate this, virtually all runs will be discarded (NaN).
+  // A warning is issued for moderate overlap (WACC − TGR < 1%) where some runs may still be valid.
 
   const waccVar = stressVars.find(v => v.id === 'wacc');
   const tgrVar = stressVars.find(v => v.id === 'tgr');
-  if (waccVar && tgrVar && waccVar.mean <= tgrVar.mean) {
-    warnings['wacc_tgr'] = ERRORS.waccGtTgr;
+  if (waccVar && tgrVar) {
+    const waccEnabled = waccVar.enabled !== false;
+    const tgrEnabled = tgrVar.enabled !== false;
+    if (waccEnabled && tgrEnabled) {
+      if (waccVar.mean <= tgrVar.mean) {
+        errors['wacc_tgr'] = ERRORS.waccGtTgr;
+      } else if (waccVar.mean - tgrVar.mean < 0.01) {
+        // Spread < 1%: large fraction of sampled runs will have WACC ≤ TGR → warn
+        warnings['wacc_tgr'] = 'WACC − TGR spread is < 1%. Many sampled runs may be discarded as invalid. Consider widening the gap.';
+      }
+    }
   }
 
   // ── Config Validation ──

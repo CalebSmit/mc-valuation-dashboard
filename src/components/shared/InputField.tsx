@@ -25,7 +25,7 @@ export function InputField({
   return (
     <div className="mb-3">
       <div className="flex items-center gap-1 mb-1">
-        <label className="text-12 font-medium" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <label className="input-field-label text-12 font-medium">
           {label}
         </label>
         {tooltip && <TooltipIcon text={tooltip} />}
@@ -33,27 +33,19 @@ export function InputField({
 
       <div className="relative">
         {readOnly ? (
-          <div
-            className="mc-input flex items-center"
-            style={{ color: 'var(--color-text-faint)', cursor: 'default' }}
-          >
+          <div className="input-field-readonly mc-input flex items-center">
             {readOnlyValue ?? '—'}
           </div>
         ) : (
           <input
             {...inputProps}
-            className={`mc-input ${error ? 'error' : ''} ${className}`}
-            style={{ paddingRight: units ? '40px' : undefined }}
-            aria-invalid={!!error}
+            className={`mc-input ${units ? 'input-field-has-units' : ''} ${error ? 'error' : ''} ${className}`}
             aria-describedby={error ? `${String(inputProps.id)}-error` : undefined}
           />
         )}
 
         {units && (
-          <span
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-11 pointer-events-none"
-            style={{ color: 'var(--color-text-faint)', fontFamily: 'DM Mono' }}
-          >
+          <span className="input-field-units absolute right-2 top-1/2 -translate-y-1/2 text-11 pointer-events-none">
             {units}
           </span>
         )}
@@ -62,8 +54,7 @@ export function InputField({
       {error && (
         <p
           id={`${String(inputProps.id)}-error`}
-          className="text-11 mt-1"
-          style={{ color: 'var(--color-error)' }}
+          className="input-field-error text-11 mt-1"
           role="alert"
         >
           {error}

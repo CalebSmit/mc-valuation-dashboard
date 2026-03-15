@@ -1,8 +1,9 @@
 import { useResultsStore } from '../../store/resultsSlice';
 import { useScenarioStore } from '../../store/scenarioSlice';
 import { useInputsStore } from '../../store/inputsSlice';
-import { formatPrice, formatProbability, formatRunCount, formatTimestamp } from '../../utils/formatters';
+import { formatPrice, formatProbability, formatRunCount, formatTimestamp, formatMultiple } from '../../utils/formatters';
 import { STAT_LABELS } from '../../constants/labels';
+import { TooltipIcon } from '../shared/TooltipIcon';
 
 // ─── StatsPanel ───────────────────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ export function StatsPanel() {
   if (!output) {
     return (
       <div className="h-full flex items-center justify-center p-4">
-        <span className="text-12" style={{ color: 'var(--color-text-faint)', fontFamily: 'Space Grotesk' }}>
+        <span className="stats-empty text-12">
           Run simulation to see statistics.
         </span>
       </div>
@@ -25,7 +26,17 @@ export function StatsPanel() {
   const var95Loss = currentPrice - output.var95;
   const cvar95Loss = currentPrice - output.cvar95;
 
-  const rows: { label: string; value: string; accent?: boolean; variant?: 'bear' | 'base' | 'bull' | 'normal' }[] = [
+  // High discard rate (>2%) means the WACC/TGR distribution has significant overlap
+  const totalRuns = output.results.length + output.discardedCount;
+  const discardRate = totalRuns > 0 ? output.discardedCount / totalRuns : 0;
+  const highDiscardRate = discardRate > 0.02;
+
+  const evEbitda = output.impliedEvEbitda;
+
+  // Fat tail warning: P95/P5 > 5× is concerning
+  const fatTail = !isNaN(output.tailRatio) && output.tailRatio > 5;
+
+  const rows: { label: string; value: string; accent?: boolean; variant?: 'bear' | 'base' | 'bull' | 'normal'; tooltip?: string }[] = [
     { label: STAT_LABELS.mean,    value: formatPrice(output.mean),   accent: true },
     { label: STAT_LABELS.median,  value: formatPrice(output.median), accent: true },
     { label: STAT_LABELS.stdDev,  value: formatPrice(output.stdDev) },
@@ -43,23 +54,30 @@ export function StatsPanel() {
     { label: STAT_LABELS.probAboveBase, value: formatProbability(output.probAboveBase), variant: 'base' },
     { label: STAT_LABELS.probAboveBull, value: formatProbability(output.probAboveBull), variant: 'bull' },
     { label: '', value: '', accent: false }, // divider
-    { label: STAT_LABELS.var95,  value: `−${formatPrice(Math.max(0, var95Loss))}` },
-    { label: STAT_LABELS.cvar95, value: `−${formatPrice(Math.max(0, cvar95Loss))}` },
+    {
+      label: STAT_LABELS.var95,
+      value: `−${formatPrice(Math.max(0, var95Loss))}`,
+      tooltip: 'Maximum loss in the best 95% of outcomes (current price − 5th percentile). Expressed as a dollar loss from the current price.',
+    },
+    {
+      label: STAT_LABELS.cvar95,
+      value: `−${formatPrice(Math.max(0, cvar95Loss))}`,
+      tooltip: 'Expected Shortfall: mean loss in the worst 5% of outcomes (current price − mean of bottom 5%). More conservative than VaR.',
+    },
   ];
 
   const variantColor = (v?: 'bear' | 'base' | 'bull' | 'normal') => {
-    if (v === 'bear') return 'var(--color-bear)';
-    if (v === 'base') return 'var(--color-neutral)';
-    if (v === 'bull') return 'var(--color-bull)';
-    return 'var(--color-primary)';
+    if (v === 'bear') return 'stats-value-bear';
+    if (v === 'base') return 'stats-value-base';
+    if (v === 'bull') return 'stats-value-bull';
+    return 'stats-value-accent';
   };
 
   const variantDot = (v?: 'bear' | 'base' | 'bull' | 'normal') => {
     if (!v || v === 'normal') return null;
     return (
       <span
-        className="inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0"
-        style={{ background: variantColor(v), verticalAlign: 'middle' }}
+        className={`stats-variant-dot inline-block w-1.5 h-1.5 rounded-full mr-1 flex-shrink-0 ${v === 'bear' ? 'stats-variant-dot-bear' : v === 'base' ? 'stats-variant-dot-base' : 'stats-variant-dot-bull'}`}
       />
     );
   };
@@ -67,49 +85,54 @@ export function StatsPanel() {
   return (
     <div className="h-full overflow-y-auto" role="region" aria-label="Simulation statistics">
       {/* Run metadata */}
-      <div className="px-3 py-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
+      <div className="ui-border-bottom px-3 py-2">
         <div className="flex items-center justify-between">
-          <span className="text-11" style={{ color: 'var(--color-text-faint)', fontFamily: 'Space Grotesk' }}>
+          <span className="text-11 ui-text-faint ui-font-space">
             {formatRunCount(output.results.length)} valid runs
             {output.discardedCount > 0 && (
-              <span style={{ color: 'var(--color-warn)' }}> · {output.discardedCount} discarded</span>
+              <span className={highDiscardRate ? 'stats-discard-danger' : 'stats-discard-warn'}>
+                {' '}· {output.discardedCount} discarded
+              </span>
             )}
           </span>
           {elapsed && (
-            <span className="text-11" style={{ color: 'var(--color-text-faint)', fontFamily: 'DM Mono' }}>
+            <span className="text-11 ui-text-faint ui-font-mono">
               {elapsed.toFixed(0)}ms
             </span>
           )}
         </div>
-        <div className="text-11 mt-0.5" style={{ color: 'var(--color-text-faint)', fontFamily: 'DM Mono' }}>
+        <div className="text-11 mt-0.5 ui-text-faint ui-font-mono">
           {formatTimestamp(output.completedAt)}
         </div>
+        {/* High discard rate warning */}
+        {highDiscardRate && (
+          <div className="ui-banner-red mt-1.5 px-2 py-1 rounded text-11">
+            {(discardRate * 100).toFixed(0)}% of runs discarded — WACC and TGR distributions overlap significantly. Widen the WACC−TGR spread.
+          </div>
+        )}
       </div>
 
       {/* Stats table */}
-      <table className="w-full text-12" style={{ borderCollapse: 'collapse' }}>
+      <table className="ui-table-collapse w-full text-12">
         <tbody>
           {rows.map((row, i) => {
             if (!row.label) {
-              return <tr key={i}><td colSpan={2} style={{ borderBottom: '1px solid var(--color-border)', padding: '2px 0' }} /></tr>;
+              return <tr key={i}><td colSpan={2} className="stats-divider-row" /></tr>;
             }
             return (
               <tr
                 key={row.label}
-                className="stat-value"
-                style={{ borderBottom: '1px solid rgba(48,54,61,0.5)' }}
+                className="stat-value ui-border-bottom-soft"
               >
-                <td className="px-3 py-1.5" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
-                  {variantDot(row.variant)}
-                  {row.label}
+                <td className="px-3 py-1.5 ui-text-muted ui-font-space">
+                  <span className="flex items-center gap-1">
+                    {variantDot(row.variant)}
+                    {row.label}
+                    {row.tooltip && <TooltipIcon text={row.tooltip} />}
+                  </span>
                 </td>
                 <td
-                  className="px-3 py-1.5 text-right"
-                  style={{
-                    color: row.variant ? variantColor(row.variant) : (row.accent ? 'var(--color-primary)' : 'var(--color-text)'),
-                    fontFamily: 'DM Mono',
-                    fontWeight: row.accent ? 500 : 400,
-                  }}
+                  className={`px-3 py-1.5 text-right ui-font-mono ${row.variant ? variantColor(row.variant) : (row.accent ? 'stats-value-accent' : 'stats-value-normal')}`}
                 >
                   {row.value}
                 </td>
@@ -119,19 +142,41 @@ export function StatsPanel() {
         </tbody>
       </table>
 
+      {/* Implied EV/EBITDA sanity check */}
+      {!isNaN(evEbitda) && (
+        <div className="ui-border-top px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-12 ui-text-muted ui-font-space">
+              {STAT_LABELS.impliedEvEbitda}
+              <TooltipIcon text="Implied EV/EBITDA = (mean price × shares + debt − cash) / TTM EBITDA. Green = 6–20× (typical), amber = 3–6× or 20–30× (stretched), red = outside this range (extreme)." />
+            </span>
+            <span className={`text-12 ui-font-mono ${isNaN(evEbitda) ? 'stats-ev-muted' : evEbitda < 3 || evEbitda > 30 ? 'stats-ev-bear' : evEbitda < 6 || evEbitda > 20 ? 'stats-ev-warn' : 'stats-ev-bull'}`}>
+              {formatMultiple(evEbitda)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Fat-tail warning */}
+      {fatTail && (
+        <div className="ui-banner-amber mx-3 mb-2 px-2 py-1.5 rounded text-11">
+          Wide tail detected (P95/P5 = {formatMultiple(output.tailRatio)}) — high growth and exit multiple may be compounding. Consider narrowing the exit multiple range.
+        </div>
+      )}
+
       {/* Scenario reference */}
-      <div className="px-3 py-2 mt-1" style={{ borderTop: '1px solid var(--color-border)' }}>
-        <div className="text-11 mb-1" style={{ color: 'var(--color-text-faint)', fontFamily: 'Space Grotesk' }}>
+      <div className="ui-border-top px-3 py-2 mt-1">
+        <div className="text-11 mb-1 ui-text-faint ui-font-space">
           Scenario targets
         </div>
         {[
-          { label: 'Bear', value: scenario.bear, color: 'var(--color-bear)' },
-          { label: 'Base', value: scenario.base, color: 'var(--color-neutral)' },
-          { label: 'Bull', value: scenario.bull, color: 'var(--color-bull)' },
+          { label: 'Bear', value: scenario.bear, colorClass: 'ui-text-bear' },
+          { label: 'Base', value: scenario.base, colorClass: 'ui-text-neutral' },
+          { label: 'Bull', value: scenario.bull, colorClass: 'ui-text-bull' },
         ].map(s => (
           <div key={s.label} className="flex justify-between text-11">
-            <span style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>{s.label}</span>
-            <span style={{ color: s.color, fontFamily: 'DM Mono' }}>{formatPrice(s.value)}</span>
+            <span className="ui-text-muted ui-font-space">{s.label}</span>
+            <span className={`${s.colorClass} ui-font-mono`}>{formatPrice(s.value)}</span>
           </div>
         ))}
       </div>

@@ -56,7 +56,7 @@ describe('NaN filter — invalid runs are discarded', () => {
 });
 
 describe('WACC ≤ TGR validation warning', () => {
-  it('returns a warning (not an error) when WACC mean ≤ TGR mean', () => {
+  it('returns a blocking error when WACC mean ≤ TGR mean', () => {
     const warnVars = DEFAULT_STRESS_VARS.map(v => {
       if (v.id === 'wacc') return { ...v, mean: 0.02 };
       if (v.id === 'tgr')  return { ...v, mean: 0.03 };
@@ -64,12 +64,23 @@ describe('WACC ≤ TGR validation warning', () => {
     });
 
     const result = validateInputs(DEFAULT_INPUTS, warnVars, DEFAULT_SCENARIO, DEFAULT_CONFIG);
-    expect(result.valid).toBe(true);  // Warning, not error — run proceeds
-    expect(Object.keys(result.warnings)).toContain('wacc_tgr');
+    expect(result.valid).toBe(false);  // Blocking error — all runs would be discarded as NaN
+    expect(Object.keys(result.errors)).toContain('wacc_tgr');
   });
 
   it('returns no WACC warning when WACC mean > TGR mean (normal case)', () => {
     const result = validateInputs(DEFAULT_INPUTS, DEFAULT_STRESS_VARS, DEFAULT_SCENARIO, DEFAULT_CONFIG);
+    expect(result.warnings['wacc_tgr']).toBeUndefined();
+  });
+
+  it('returns no WACC warning when WACC is fixed and disabled', () => {
+    const warnVars = DEFAULT_STRESS_VARS.map(v => {
+      if (v.id === 'wacc') return { ...v, mean: 0.02, enabled: false };
+      if (v.id === 'tgr') return { ...v, mean: 0.03 };
+      return v;
+    });
+
+    const result = validateInputs(DEFAULT_INPUTS, warnVars, DEFAULT_SCENARIO, DEFAULT_CONFIG);
     expect(result.warnings['wacc_tgr']).toBeUndefined();
   });
 });

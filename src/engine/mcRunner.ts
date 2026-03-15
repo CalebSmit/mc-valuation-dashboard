@@ -1,23 +1,8 @@
-import type { SimulationInputs, StressVariable, ScenarioTargets, SimulationConfig, SampledVariables, DistributionType } from '../types/inputs';
+import type { SimulationInputs, StressVariable, ScenarioTargets, SimulationConfig, SampledVariables, DistributionType, StressVariableId } from '../types/inputs';
 import type { SimulationOutput, SimulationResult } from '../types/outputs';
 import { sampleNormal, sampleLognormal, sampleUniform, sampleTriangular, createLcg, lcgNext, cryptoRandom } from './distributions';
 import { latinHypercubeSample, latinHypercubeSampleSeeded } from './lhsSampler';
 import { computeMean, computeStdDev, computePercentile, computeAllPercentiles, computeProbAbove, computeVaR95, computeCVaR95, buildHistogramBins, computeTornadoCorrelations } from './statistics';
-
-// ─── Variable Index Map ───────────────────────────────────────────────────────
-// Maps stress variable IDs to array indices for LHS matrix lookup
-const VAR_INDICES: Record<string, number> = {
-  revenueGrowth:      0,
-  ebitdaMargin:       1,
-  capexPct:           2,
-  nwcPct:             3,
-  daPct:              4,
-  wacc:               5,
-  tgr:                6,
-  exitMultiple:       7,
-  taxRate:            8,
-  year1GrowthPremium: 9,
-};
 
 // ─── Monte Carlo Runner ───────────────────────────────────────────────────────
 
@@ -39,7 +24,11 @@ export function runMonteCarlo(
 ): SimulationOutput {
   const N = config.numRuns;
   const method = config.terminalValueMethod;
+  const midYear = config.midYearConvention ?? false;
   const start = Date.now();
+  const activeStressVars = stressVars.filter(variable => variable.enabled);
+  const activeVariableIds = activeStressVars.map(variable => variable.id);
+  const activeVarIndices = buildActiveVariableIndexMap(activeStressVars);
 
   // ── Set up PRNG ──
   const isSeeded = config.seed !== null && config.seed !== undefined;
@@ -48,10 +37,10 @@ export function runMonteCarlo(
 
   // ── Set up LHS samples if needed ──
   let lhsSamples: Float64Array[] | null = null;
-  if (config.samplingMethod === 'lhs') {
+  if (config.samplingMethod === 'lhs' && activeStressVars.length > 0) {
     lhsSamples = isSeeded
-      ? latinHypercubeSampleSeeded(N, stressVars.length, random)
-      : latinHypercubeSample(N, stressVars.length);
+      ? latinHypercubeSampleSeeded(N, activeStressVars.length, random)
+      : latinHypercubeSample(N, activeStressVars.length);
   }
 
   // ── Allocate result arrays ──
@@ -62,10 +51,10 @@ export function runMonteCarlo(
   // ── Hot loop ──
   for (let i = 0; i < N; i++) {
     // Sample all variables for this run
-    const sampled = sampleAllVariables(stressVars, i, lhsSamples, random);
+    const sampled = sampleAllVariables(stressVars, activeStressVars, activeVarIndices, i, lhsSamples, random);
 
     // Compute DCF price
-    const price = computeDCFPrice(inputs, sampled, method);
+    const price = computeDCFPrice(inputs, sampled, method, midYear);
 
     allPrices[i] = price;
 
@@ -122,8 +111,7 @@ export function runMonteCarlo(
   const cvar95 = computeCVaR95(validPrices);
 
   // ── Tornado correlations ──
-  const variableIds = stressVars.map(v => v.id);
-  const tornadoData = computeTornadoCorrelations(validRecords, variableIds);
+  const tornadoData = computeTornadoCorrelations(validRecords, activeVariableIds);
 
   // Attach proper labels from stressVars to tornado entries
   const labelMap = new Map(stressVars.map(v => [v.id, v.label]));
@@ -134,14 +122,28 @@ export function runMonteCarlo(
   // ── Histogram bins ──
   const histogramBins = buildHistogramBins(validPrices);
 
+  // ── Valuation sanity checks ──
+  // Implied EV/EBITDA: (mean price × shares + debt − cash) / TTM EBITDA
+  const impliedEvEbitda = (inputs.ttmEbitda > 0 && !isNaN(mean))
+    ? ((mean * inputs.sharesOutstanding) + inputs.totalDebt - inputs.cashAndEquiv) / inputs.ttmEbitda
+    : NaN;
+
+  // Tail ratio: P95 / P5 — flags fat-tailed distributions (>5× is concerning)
+  const p5 = percentiles[5];
+  const p95 = percentiles[95];
+  const tailRatio = (p5 > 0) ? p95 / p5 : NaN;
+
   if (import.meta.env.DEV) {
     const elapsed = Date.now() - start;
     console.log(`[MC] ${N} runs in ${elapsed}ms | valid: ${validCount} | discarded: ${discardedCount}`);
   }
 
+  const elapsedMs = Date.now() - start;
+
   return {
     results: validPrices,
     runRecords: validRecords,
+    activeVariableIds,
     discardedCount,
     mean,
     median: computePercentile(validPrices, 0.5),
@@ -154,8 +156,11 @@ export function runMonteCarlo(
     probAboveBull,
     var95,
     cvar95,
+    impliedEvEbitda,
+    tailRatio,
     tornadoData,
     histogramBins,
+    elapsedMs,
     completedAt: Date.now(),
   };
 }
@@ -169,25 +174,16 @@ export function runMonteCarlo(
  */
 function sampleAllVariables(
   stressVars: StressVariable[],
+  activeStressVars: StressVariable[],
+  activeVarIndices: Partial<Record<StressVariableId, number>>,
   runIndex: number,
   lhsSamples: Float64Array[] | null,
   random: () => number
 ): SampledVariables {
-  const sampled: SampledVariables = {
-    revenueGrowth:      0,
-    ebitdaMargin:       0,
-    capexPct:           0,
-    nwcPct:             0,
-    daPct:              0,
-    wacc:               0,
-    tgr:                0,
-    exitMultiple:       0,
-    taxRate:            0,
-    year1GrowthPremium: 0,
-  };
+  const sampled = createMeanSample(stressVars);
 
-  for (const variable of stressVars) {
-    const colIndex = VAR_INDICES[variable.id];
+  for (const variable of activeStressVars) {
+    const colIndex = activeVarIndices[variable.id];
     let value: number;
 
     if (lhsSamples !== null && colIndex !== undefined) {
@@ -204,6 +200,39 @@ function sampleAllVariables(
   }
 
   return sampled;
+}
+
+function createMeanSample(stressVars: StressVariable[]): SampledVariables {
+  const sampled: SampledVariables = {
+    revenueGrowth: 0,
+    ebitdaMargin: 0,
+    capexPct: 0,
+    nwcPct: 0,
+    daPct: 0,
+    wacc: 0,
+    tgr: 0,
+    exitMultiple: 0,
+    taxRate: 0,
+    year1GrowthPremium: 0,
+  };
+
+  for (const variable of stressVars) {
+    assignVariable(sampled, variable.id, variable.mean);
+  }
+
+  return sampled;
+}
+
+function buildActiveVariableIndexMap(
+  activeStressVars: StressVariable[]
+): Partial<Record<StressVariableId, number>> {
+  const indexMap: Partial<Record<StressVariableId, number>> = {};
+
+  for (const [index, variable] of activeStressVars.entries()) {
+    indexMap[variable.id] = index;
+  }
+
+  return indexMap;
 }
 
 /**
@@ -288,7 +317,8 @@ function assignVariable(sampled: SampledVariables, id: string, value: number): v
 function computeDCFPrice(
   inputs: SimulationInputs,
   sampled: SampledVariables,
-  method: 'ggm' | 'exitMultiple'
+  method: 'ggm' | 'exitMultiple',
+  midYearConvention = false
 ): number {
   if (sampled.wacc <= sampled.tgr) return NaN;
 
@@ -308,7 +338,8 @@ function computeDCFPrice(
     const ebit = ebitda - da;
     const nopat = ebit * (1 - sampled.taxRate);
     const fcf = nopat + da - revenue * sampled.capexPct - revenue * sampled.nwcPct;
-    pvFcf += fcf / Math.pow(1 + sampled.wacc, year);
+    const discountExp = midYearConvention ? year - 0.5 : year;
+    pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
     if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
   }
 

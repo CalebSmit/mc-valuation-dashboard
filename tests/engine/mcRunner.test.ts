@@ -32,6 +32,7 @@ describe('mcRunner', () => {
 
     // Tornado data should have entries
     expect(output.tornadoData.length).toBeGreaterThan(0);
+    expect(output.activeVariableIds).toHaveLength(10);
 
     // Results should be sorted ascending
     for (let i = 1; i < output.results.length; i++) {
@@ -58,5 +59,30 @@ describe('mcRunner', () => {
 
     const diff = Math.abs(stdOutput.mean - lhsOutput.mean) / stdOutput.mean;
     expect(diff).toBeLessThan(0.05); // Within 5%
+  });
+
+  it('keeps disabled variables fixed at their mean and hides them from tornado output', () => {
+    const subsetVars = DEFAULT_STRESS_VARS.map(variable => (
+      variable.id === 'wacc' || variable.id === 'taxRate'
+        ? { ...variable, enabled: false }
+        : variable
+    ));
+
+    const output = runMonteCarlo(
+      DEFAULT_INPUTS,
+      subsetVars,
+      DEFAULT_SCENARIO,
+      { ...DEFAULT_CONFIG, numRuns: 200 as const, seed: 11, samplingMethod: 'lhs' as const },
+    );
+
+    expect(output.activeVariableIds).not.toContain('wacc');
+    expect(output.activeVariableIds).not.toContain('taxRate');
+    expect(output.tornadoData.map(entry => entry.variableId)).not.toContain('wacc');
+    expect(output.tornadoData.map(entry => entry.variableId)).not.toContain('taxRate');
+
+    for (const record of output.runRecords.slice(0, 25)) {
+      expect(record.wacc).toBeCloseTo(DEFAULT_STRESS_VARS.find(variable => variable.id === 'wacc')!.mean, 10);
+      expect(record.taxRate).toBeCloseTo(DEFAULT_STRESS_VARS.find(variable => variable.id === 'taxRate')!.mean, 10);
+    }
   });
 });

@@ -34,7 +34,8 @@ import type { SimulationInputs, SampledVariables } from '../types/inputs';
 export function computeDCF(
   base: SimulationInputs,
   sampled: SampledVariables,
-  method: 'ggm' | 'exitMultiple'
+  method: 'ggm' | 'exitMultiple',
+  midYearConvention = false
 ): number {
   // Model is undefined when WACC ≤ TGR (perpetuity formula breaks)
   if (sampled.wacc <= sampled.tgr) return NaN;
@@ -74,8 +75,9 @@ export function computeDCF(
     const nwcChange = revenue * sampled.nwcPct;
     const fcf = nopat + da - capex - nwcChange;
 
-    // Discount to present value
-    pvFcf += fcf / Math.pow(1 + sampled.wacc, year);
+    // Discount to present value — mid-year convention uses t−0.5 exponent
+    const discountExp = midYearConvention ? year - 0.5 : year;
+    pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
 
     // Track last year values for terminal value
     if (year === N) {
@@ -95,6 +97,7 @@ export function computeDCF(
   }
 
   // Enterprise Value = PV of explicit FCFs + PV of Terminal Value
+  // Terminal value is always discounted at end-of-period N (convention)
   const ev = pvFcf + terminalValue / Math.pow(1 + sampled.wacc, N);
 
   // Equity Value = EV − Net Debt (Debt − Cash)
@@ -113,7 +116,8 @@ export function computeDCF(
 export function computeEV(
   base: SimulationInputs,
   sampled: SampledVariables,
-  method: 'ggm' | 'exitMultiple'
+  method: 'ggm' | 'exitMultiple',
+  midYearConvention = false
 ): number {
   if (sampled.wacc <= sampled.tgr) return NaN;
 
@@ -140,7 +144,8 @@ export function computeEV(
     const capex = revenue * sampled.capexPct;
     const nwcChange = revenue * sampled.nwcPct;
     const fcf = nopat + da - capex - nwcChange;
-    pvFcf += fcf / Math.pow(1 + sampled.wacc, year);
+    const discountExp = midYearConvention ? year - 0.5 : year;
+    pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
     if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
   }
 

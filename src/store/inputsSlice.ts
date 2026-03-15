@@ -19,9 +19,20 @@ interface InputsSlice {
   loadStressVars: (vars: StressVariable[]) => void;
 }
 
+function normalizeStressVar(variable: StressVariable): StressVariable {
+  return {
+    ...variable,
+    enabled: variable.enabled ?? true,
+  };
+}
+
+function cloneStressVars(vars: StressVariable[]): StressVariable[] {
+  return vars.map(normalizeStressVar);
+}
+
 export const useInputsStore = create<InputsSlice>((set) => ({
   inputs: { ...DEFAULT_INPUTS },
-  stressVars: DEFAULT_STRESS_VARS.map(v => ({ ...v })),
+  stressVars: cloneStressVars(DEFAULT_STRESS_VARS),
 
   setInput: (key, value) =>
     set(state => ({ inputs: { ...state.inputs, [key]: value } })),
@@ -33,13 +44,13 @@ export const useInputsStore = create<InputsSlice>((set) => ({
   setStressVar: (id, key, value) =>
     set(state => ({
       stressVars: state.stressVars.map(v =>
-        v.id === id ? { ...v, [key]: value } : v
+        v.id === id ? normalizeStressVar({ ...v, [key]: value }) : v
       ),
     })),
 
   resetStressVars: () =>
-    set({ stressVars: DEFAULT_STRESS_VARS.map(v => ({ ...v })) }),
+    set({ stressVars: cloneStressVars(DEFAULT_STRESS_VARS) }),
 
   loadStressVars: (vars) =>
-    set({ stressVars: vars.map(v => ({ ...v })) }),
+    set({ stressVars: cloneStressVars(vars) }),
 }));

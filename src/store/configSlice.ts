@@ -10,6 +10,7 @@ interface ConfigSlice {
   setSeed: (seed: number | null) => void;
   setSamplingMethod: (method: SamplingMethod) => void;
   setTerminalValueMethod: (method: 'ggm' | 'exitMultiple') => void;
+  setMidYearConvention: (enabled: boolean) => void;
   resetConfig: () => void;
   loadConfig: (config: SimulationConfig) => void;
 }
@@ -30,6 +31,9 @@ export const useConfigStore = create<ConfigSlice>((set) => ({
     set(state => ({
       config: { ...state.config, terminalValueMethod },
     })),
+
+  setMidYearConvention: (midYearConvention) =>
+    set(state => ({ config: { ...state.config, midYearConvention } })),
 
   resetConfig: () => set({ config: { ...DEFAULT_CONFIG } }),
 

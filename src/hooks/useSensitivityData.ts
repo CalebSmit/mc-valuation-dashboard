@@ -49,8 +49,10 @@ export function useSensitivityData(): SensitivityData {
       year1GrowthPremium: varMap.get('year1GrowthPremium')?.mean ?? 0.02,
     };
 
+    const midYear = config.midYearConvention ?? false;
+
     // Base case price
-    const basePrice = computeDCF(inputs, baseSampled, config.terminalValueMethod);
+    const basePrice = computeDCF(inputs, baseSampled, config.terminalValueMethod, midYear);
 
     // WACC range: ±200bp in 4 equal steps → 5 values
     const waccStep = 0.005; // 50bp per step
@@ -68,7 +70,7 @@ export function useSensitivityData(): SensitivityData {
     const cells: SensitivityCell[][] = rowValues.map(wacc =>
       colValues.map(tgr => {
         const sampled = { ...baseSampled, wacc, tgr };
-        const price = computeDCF(inputs, sampled, config.terminalValueMethod);
+        const price = computeDCF(inputs, sampled, config.terminalValueMethod, midYear);
         const deltaVsBase = isNaN(price) || isNaN(basePrice) ? NaN
           : (price - basePrice) / Math.abs(basePrice);
         return { rowValue: wacc, colValue: tgr, price, deltaVsBase };
@@ -76,5 +78,5 @@ export function useSensitivityData(): SensitivityData {
     );
 
     return { cells, rowValues, colValues, basePrice };
-  }, [inputs, stressVars, config.terminalValueMethod]);
+  }, [inputs, stressVars, config.terminalValueMethod, config.midYearConvention]);
 }

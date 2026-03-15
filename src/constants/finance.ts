@@ -30,6 +30,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'revenueGrowth',
     label: 'Revenue Growth Rate',
     group: 'incomeStatement',
+    enabled: true,
     mean: 0.08,       // 8%
     stdDev: 0.04,     // 4%
     min: -0.10,       // -10%
@@ -41,6 +42,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'ebitdaMargin',
     label: 'EBITDA Margin',
     group: 'incomeStatement',
+    enabled: true,
     mean: 0.22,       // 22%
     stdDev: 0.04,     // 4%
     min: 0.05,        // 5%
@@ -52,6 +54,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'capexPct',
     label: 'CapEx as % of Revenue',
     group: 'incomeStatement',
+    enabled: true,
     mean: 0.05,       // 5%
     stdDev: 0.02,     // 2%
     min: 0.01,        // 1%
@@ -61,8 +64,9 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
   },
   {
     id: 'nwcPct',
-    label: 'Change in NWC as % of Revenue',
+    label: '\u0394NWC as % of Revenue (annual)',
     group: 'incomeStatement',
+    enabled: true,
     mean: 0.02,       // 2%
     stdDev: 0.01,     // 1%
     min: -0.05,       // -5%
@@ -74,6 +78,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'daPct',
     label: 'D&A as % of Revenue',
     group: 'incomeStatement',
+    enabled: true,
     mean: 0.04,       // 4%
     stdDev: 0.01,     // 1%
     min: 0.01,        // 1%
@@ -87,6 +92,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'wacc',
     label: 'WACC',
     group: 'valuation',
+    enabled: true,
     mean: 0.10,       // 10%
     stdDev: 0.015,    // 1.5%
     min: 0.05,        // 5%
@@ -98,6 +104,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'tgr',
     label: 'Terminal Growth Rate',
     group: 'valuation',
+    enabled: true,
     mean: 0.025,      // 2.5%
     stdDev: 0.005,    // 0.5%
     min: 0.00,        // 0%
@@ -109,6 +116,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'exitMultiple',
     label: 'EV/EBITDA Exit Multiple',
     group: 'valuation',
+    enabled: true,
     mean: 12.0,       // 12x
     stdDev: 2.0,      // 2x
     min: 4.0,         // 4x
@@ -120,6 +128,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'taxRate',
     label: 'Tax Rate',
     group: 'valuation',
+    enabled: true,
     mean: 0.25,       // 25%
     stdDev: 0.03,     // 3%
     min: 0.10,        // 10%
@@ -131,6 +140,7 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     id: 'year1GrowthPremium',
     label: 'Year 1 Growth Premium',
     group: 'valuation',
+    enabled: true,
     mean: 0.02,       // 2% additional near-term growth
     stdDev: 0.02,     // 2%
     min: -0.05,       // -5%
@@ -155,6 +165,7 @@ export const DEFAULT_CONFIG: SimulationConfig = {
   seed: null,
   samplingMethod: 'standard',
   terminalValueMethod: 'ggm',
+  midYearConvention: true,
 };
 
 // ─── Validation Bounds ───────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+import type { StressVariableId } from './inputs';
+
 // ─── Simulation Outputs ──────────────────────────────────────────────────────
 
 /** Raw result for a single simulation run (stored for CSV export + tornado). */
@@ -61,6 +63,9 @@ export interface SimulationOutput {
   /** Full run records (for CSV export + tornado correlation). */
   runRecords: SimulationResult[];
 
+  /** Stress variables that were actively sampled during this run. */
+  activeVariableIds: StressVariableId[];
+
   /** Count of runs discarded due to NaN / Infinity. */
   discardedCount: number;
 
@@ -81,9 +86,16 @@ export interface SimulationOutput {
   var95: number;   // Value at Risk (5th percentile — max loss from current price)
   cvar95: number;  // Conditional VaR (expected value in worst 5%)
 
+  // ── Valuation sanity checks ──
+  impliedEvEbitda: number; // Mean implied EV / TTM EBITDA multiple
+  tailRatio: number;       // P95 / P5 ratio — flags fat-tailed distributions
+
   // ── Derived chart data ──
   tornadoData: TornadoEntry[];
   histogramBins: HistogramBin[];
+
+  /** Actual engine runtime in milliseconds. */
+  elapsedMs: number;
 
   /** Timestamp when simulation completed. */
   completedAt: number; // Date.now()

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useInputsStore } from '../../store/inputsSlice';
 import { useScenarioStore } from '../../store/scenarioSlice';
 import { SectionCard } from '../shared/SectionCard';
@@ -8,16 +9,45 @@ import type { SimulationInputs } from '../../types/inputs';
 
 // ─── FundamentalsSection ──────────────────────────────────────────────────────
 
+// Assumptions used when back-solving CapEx from TTM FCF
+const ASSUMED_TAX_RATE = 0.25;
+const ASSUMED_DA_PCT = 0.04;
+
 export function FundamentalsSection() {
   const inputs = useInputsStore(s => s.inputs);
   const setInput = useInputsStore(s => s.setInput);
+  const setStressVar = useInputsStore(s => s.setStressVar);
   const deriveFromPrice = useScenarioStore(s => s.deriveFromPrice);
+  const [calibrationBanner, setCalibrationBanner] = useState<string | null>(null);
+
+  const tryCalibrate = (revenue: number, ebitda: number, fcf: number) => {
+    if (revenue > 0 && ebitda > 0 && fcf > 0) {
+      const derivedEbitdaMargin = ebitda / revenue;
+      // Back-solve CapEx: FCF ≈ NOPAT + DA - CapEx (NWC change ~0)
+      const da = revenue * ASSUMED_DA_PCT;
+      const nopat = (ebitda - da) * (1 - ASSUMED_TAX_RATE);
+      const derivedCapexPct = Math.max(0, (nopat + da - fcf) / revenue);
+
+      setStressVar('ebitdaMargin', 'mean', parseFloat(derivedEbitdaMargin.toFixed(4)));
+      setStressVar('capexPct', 'mean', parseFloat(derivedCapexPct.toFixed(4)));
+
+      const marginPct = (derivedEbitdaMargin * 100).toFixed(1);
+      const capexPct = (derivedCapexPct * 100).toFixed(1);
+      setCalibrationBanner(`Stress var defaults updated from TTM data \u2014 EBITDA Margin: ${marginPct}%, CapEx: ${capexPct}%`);
+    }
+  };
 
   const num = (key: keyof SimulationInputs) => (value: string) => {
     const n = parseFloat(value);
     if (!isNaN(n)) {
       setInput(key, n as SimulationInputs[typeof key]);
       if (key === 'currentPrice') deriveFromPrice(n);
+      if (key === 'ttmRevenue' || key === 'ttmEbitda' || key === 'ttmFcf') {
+        const rev    = key === 'ttmRevenue' ? n : inputs.ttmRevenue;
+        const ebitda = key === 'ttmEbitda'  ? n : inputs.ttmEbitda;
+        const fcf    = key === 'ttmFcf'     ? n : inputs.ttmFcf;
+        tryCalibrate(rev, ebitda, fcf);
+      }
     }
   };
 
@@ -46,7 +76,7 @@ export function FundamentalsSection() {
           value={inputs.ticker}
           onChange={e => str('ticker')(e.target.value.toUpperCase())}
           placeholder="ACME"
-          style={{ textTransform: 'uppercase' }}
+          className="uppercase"
         />
       </div>
 
@@ -127,7 +157,7 @@ export function FundamentalsSection() {
 
         {/* Projection Years */}
         <div className="mb-3">
-          <label className="text-12 block mb-1" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+          <label className="text-12 block mb-1 ui-text-muted ui-font-space">
             {FIELD_LABELS.projectionYears}
           </label>
           <div className="flex gap-1">
@@ -136,14 +166,7 @@ export function FundamentalsSection() {
                 key={yr}
                 type="button"
                 onClick={() => setInput('projectionYears', yr)}
-                className="flex-1 py-1 rounded text-12"
-                style={{
-                  background: inputs.projectionYears === yr ? 'var(--color-primary)' : 'var(--color-surface-alt)',
-                  color: inputs.projectionYears === yr ? 'var(--color-bg)' : 'var(--color-text-muted)',
-                  border: `1px solid ${inputs.projectionYears === yr ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                  fontFamily: 'DM Mono',
-                  cursor: 'pointer',
-                }}
+                className={`ui-segment-btn ui-segment-btn-mono flex-1 py-1 rounded text-12 ${inputs.projectionYears === yr ? 'ui-segment-btn-active-solid' : 'ui-segment-btn-inactive'}`}
               >
                 {yr}yr
               </button>
@@ -153,16 +176,32 @@ export function FundamentalsSection() {
       </div>
 
       {/* Implied market cap read-only */}
-      <div className="mt-1 pt-2" style={{ borderTop: '1px solid var(--color-border)' }}>
+      <div className="ui-border-top mt-1 pt-2">
         <div className="flex items-center justify-between">
-          <span className="text-12" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+          <span className="text-12 ui-text-muted ui-font-space">
             Implied Market Cap
           </span>
-          <span className="text-13 font-medium" style={{ color: 'var(--color-primary)', fontFamily: 'DM Mono' }}>
+          <span className="text-13 font-medium ui-text-primary ui-font-mono">
             {formatLargeNumber(impliedMarketCap)}
           </span>
         </div>
       </div>
+
+      {/* TTM calibration banner */}
+      {calibrationBanner && (
+        <div className="ui-banner-amber mt-2 px-2 py-1.5 rounded text-11 flex items-start gap-1.5">
+          <span className="ui-icon-fixed">&#9432;</span>
+          <span>{calibrationBanner}</span>
+          <button
+            type="button"
+            onClick={() => setCalibrationBanner(null)}
+            className="ui-btn-icon-dismiss"
+            aria-label="Dismiss"
+          >
+            &#10005;
+          </button>
+        </div>
+      )}
     </SectionCard>
   );
 }

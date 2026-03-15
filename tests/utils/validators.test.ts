@@ -48,14 +48,40 @@ describe('validateInputs', () => {
     expect(result.errors['ttmRevenue']).toBeDefined();
   });
 
-  it('returns warning (not error) for WACC <= TGR', () => {
+  it('returns blocking error (not warning) for WACC mean <= TGR mean', () => {
     // Modify stressVars so mean WACC (2%) < mean TGR (2.5%)
     const stressVars = DEFAULT_STRESS_VARS.map(v =>
       v.id === 'wacc' ? { ...v, mean: 0.02 } : v
     );
     const result = validateInputs(DEFAULT_INPUTS, stressVars, DEFAULT_SCENARIO, DEFAULT_CONFIG);
-    // Should be a warning, not a hard error (user can override)
-    expect(result.warnings['wacc_tgr']).toBeDefined();
+    // Should be a blocking error — all runs would be discarded as NaN
+    expect(result.valid).toBe(false);
+    expect(result.errors['wacc_tgr']).toBeDefined();
+  });
+
+  it('skips disabled variable validation errors', () => {
+    const stressVars = DEFAULT_STRESS_VARS.map(v =>
+      v.id === 'taxRate'
+        ? { ...v, enabled: false, mean: 0.9 }
+        : v
+    );
+
+    const result = validateInputs(DEFAULT_INPUTS, stressVars, DEFAULT_SCENARIO, DEFAULT_CONFIG);
+
+    expect(result.errors['stressVar.taxRate.mean']).toBeUndefined();
+    expect(result.valid).toBe(true);
+  });
+
+  it('does not warn on WACC <= TGR when one of them is disabled', () => {
+    const stressVars = DEFAULT_STRESS_VARS.map(v => {
+      if (v.id === 'wacc') return { ...v, mean: 0.02, enabled: false };
+      if (v.id === 'tgr') return { ...v, mean: 0.03 };
+      return v;
+    });
+
+    const result = validateInputs(DEFAULT_INPUTS, stressVars, DEFAULT_SCENARIO, DEFAULT_CONFIG);
+
+    expect(result.warnings['wacc_tgr']).toBeUndefined();
   });
 
   it('returns error for invalid seed (float)', () => {

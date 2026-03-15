@@ -38,6 +38,7 @@ export interface StressVariable {
   id: StressVariableId;
   label: string;
   group: StressVariableGroup;
+  enabled: boolean;
   mean: number;        // expressed as decimal fraction (e.g., 0.08 for 8%) — EXCEPT exitMultiple (raw number)
   stdDev: number;      // same units as mean
   min: number;         // lower bound for sampling clamp
@@ -80,4 +81,5 @@ export interface SimulationConfig {
   seed: number | null;       // Optional for reproducibility
   samplingMethod: SamplingMethod;
   terminalValueMethod: 'ggm' | 'exitMultiple';
+  midYearConvention: boolean; // Discount FCFs at mid-year (t−0.5) rather than end-of-year
 }

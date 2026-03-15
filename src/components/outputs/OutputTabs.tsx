@@ -15,11 +15,11 @@ import { TAB_LABELS } from '../../constants/labels';
 
 type TabKey = 'histogram' | 'tornado' | 'cdf' | 'sensitivity' | 'fan';
 
-const TABS: { key: TabKey; label: string }[] = [
+const TABS: { key: TabKey; label: string; badge?: string }[] = [
   { key: 'histogram',   label: TAB_LABELS.histogram },
   { key: 'tornado',     label: TAB_LABELS.tornado },
   { key: 'cdf',         label: TAB_LABELS.cdf },
-  { key: 'sensitivity', label: TAB_LABELS.sensitivity },
+  { key: 'sensitivity', label: TAB_LABELS.sensitivity, badge: 'det.' },
   { key: 'fan',         label: TAB_LABELS.fan },
 ];
 
@@ -50,8 +50,7 @@ export function OutputTabs() {
     <div className="flex flex-col h-full min-h-0">
       {/* ── Tab Bar ─────────────────────────────────────────────────────── */}
       <div
-        className="flex-shrink-0 flex items-center gap-0 border-b px-4"
-        style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}
+        className="output-tabs-bar flex-shrink-0 flex items-center gap-0 border-b px-4"
         role="tablist"
         aria-label="Output charts"
       >
@@ -63,22 +62,11 @@ export function OutputTabs() {
               ref={el => { tabRefs.current[i] = el; }}
               id={`tab-${tab.key}`}
               role="tab"
-              aria-selected={isActive}
               aria-controls={`tabpanel-${tab.key}`}
               tabIndex={isActive ? 0 : -1}
               onClick={() => setActiveTab(tab.key)}
               onKeyDown={e => handleKeyDown(e, i)}
-              className="relative px-4 py-3 text-12 font-medium transition-colors"
-              style={{
-                fontFamily: 'Space Grotesk',
-                color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                // Show focus ring only on keyboard navigation, not mouse click
-                outline: 'none',
-                boxShadow: 'none',
-              }}
+              className={`output-tab-button relative px-4 py-3 text-12 font-medium transition-colors ${isActive ? 'output-tab-button-active' : 'output-tab-button-inactive'}`}
               onFocus={e => {
                 if (e.target.matches(':focus-visible')) {
                   (e.target as HTMLElement).style.outline = '2px solid var(--color-primary)';
@@ -90,19 +78,25 @@ export function OutputTabs() {
               }}
             >
               {tab.label}
+              {tab.badge && (
+                <span
+                  className="output-tab-badge ml-1 text-10 px-1 rounded"
+                  title="Deterministic sensitivity — point estimates, not stochastic"
+                >
+                  {tab.badge}
+                </span>
+              )}
               {/* Active underline */}
               {isActive && (
                 <span
-                  className="absolute bottom-0 left-0 right-0 h-0.5"
-                  style={{ background: 'var(--color-primary)' }}
+                  className="output-tab-underline absolute bottom-0 left-0 right-0 h-0.5"
                   aria-hidden
                 />
               )}
               {/* Indicator dot when data is available */}
               {output && (
                 <span
-                  className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle"
-                  style={{ background: isActive ? 'var(--color-primary)' : 'var(--color-text-faint)' }}
+                  className={`ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle ${isActive ? 'output-tab-dot-active' : 'output-tab-dot-inactive'}`}
                   aria-hidden
                 />
               )}
@@ -130,14 +124,9 @@ export function OutputTabs() {
 
         {/* Stats sidebar — always visible on right; role=status for live updates */}
         <div
-          className="flex-shrink-0 overflow-y-auto"
+          className="output-tabs-sidebar flex-shrink-0 overflow-y-auto"
           role="complementary"
           aria-label="Simulation statistics"
-          style={{
-            width: '260px',
-            borderLeft: '1px solid var(--color-border)',
-            background: 'var(--color-surface)',
-          }}
         >
           <StatsPanel />
         </div>

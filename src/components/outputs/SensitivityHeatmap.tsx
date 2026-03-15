@@ -16,16 +16,15 @@ export function SensitivityHeatmap() {
   const maxPrice = Math.max(...allPrices);
   const priceRange = maxPrice - minPrice || 1;
 
-  function cellBackground(price: number): string {
-    if (isNaN(price)) return 'var(--color-surface-alt)';
+  function cellTone(price: number): string {
+    if (isNaN(price)) return 'heatmap-cell-na';
     const t = (price - minPrice) / priceRange; // 0 = min (red), 1 = max (green)
-    // Interpolate red → amber → green
-    if (t < 0.5) {
-      const f = t * 2;
-      return `rgba(248, ${Math.round(81 + (180 - 81) * f)}, ${Math.round(73 + (41 - 73) * f)}, 0.35)`;
-    }
-    const f = (t - 0.5) * 2;
-    return `rgba(${Math.round(240 - (240 - 63) * f)}, ${Math.round(180 + (185 - 180) * f)}, ${Math.round(41 + (80 - 41) * f)}, 0.35)`;
+    if (t < 0.17) return 'heatmap-tone-0';
+    if (t < 0.34) return 'heatmap-tone-1';
+    if (t < 0.5) return 'heatmap-tone-2';
+    if (t < 0.67) return 'heatmap-tone-3';
+    if (t < 0.84) return 'heatmap-tone-4';
+    return 'heatmap-tone-5';
   }
 
   function isBaseCell(ri: number, ci: number): boolean {
@@ -35,37 +34,29 @@ export function SensitivityHeatmap() {
   return (
     <div className="h-full flex flex-col">
       <div className="px-1 mb-3">
-        <div className="text-13 font-medium" style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}>
+        <div className="heatmap-title text-13 font-medium">
           Sensitivity Analysis — WACC × Terminal Growth Rate
         </div>
-        <div className="text-11" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <div className="heatmap-subtitle text-11">
           Implied share price ($) at each WACC / TGR combination. Base case highlighted. Δ% vs. base shown in parentheses.
+        </div>
+        <div className="ui-banner-blue mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded text-11">
+          Deterministic — point estimates at mean inputs. Not stochastic.
         </div>
       </div>
 
       <div className="overflow-auto">
-        <table style={{ borderCollapse: 'separate', borderSpacing: '3px', fontFamily: 'DM Mono' }}>
+        <table className="ui-table-separate-3 heatmap-table">
           <thead>
             <tr>
               {/* Corner header */}
-              <th
-                className="text-11 px-3 py-2 text-right"
-                style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk', background: 'transparent', border: 'none' }}
-              >
+              <th className="heatmap-header-corner text-11 px-3 py-2 text-right">
                 WACC ↓ / TGR →
               </th>
               {colValues.map(tgr => (
                 <th
                   key={tgr}
-                  className="text-12 px-3 py-2 text-center"
-                  style={{
-                    color: 'var(--color-text-muted)',
-                    fontFamily: 'DM Mono',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '2px',
-                    minWidth: '100px',
-                  }}
+                  className="heatmap-col-header text-12 px-3 py-2 text-center"
                 >
                   TGR {formatPercent(tgr)}
                 </th>
@@ -76,54 +67,28 @@ export function SensitivityHeatmap() {
             {rowValues.map((wacc, ri) => (
               <tr key={wacc}>
                 {/* Row header */}
-                <td
-                  className="text-12 px-3 py-2 text-right"
-                  style={{
-                    color: 'var(--color-text-muted)',
-                    fontFamily: 'DM Mono',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '2px',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <td className="heatmap-row-header text-12 px-3 py-2 text-right">
                   WACC {formatPercent(wacc)}
                 </td>
                 {colValues.map((_, ci) => {
                   const cell = cells[ri][ci];
                   const isBase = isBaseCell(ri, ci);
-                  const bg = cellBackground(cell.price);
+                  const tone = cellTone(cell.price);
                   const delta = isNaN(cell.deltaVsBase) ? '' : ` (${cell.deltaVsBase >= 0 ? '+' : ''}${(cell.deltaVsBase * 100).toFixed(1)}%)`;
 
                   return (
                     <td
                       key={ci}
-                      className="text-12 px-3 py-2 text-center"
-                      style={{
-                        background: bg,
-                        border: isBase
-                          ? '2px solid var(--color-primary)'
-                          : '1px solid rgba(48,54,61,0.5)',
-                        borderRadius: '2px',
-                        color: isNaN(cell.price) ? 'var(--color-error)' : 'var(--color-text)',
-                        fontWeight: isBase ? 600 : 400,
-                        whiteSpace: 'nowrap',
-                      }}
+                      className={`heatmap-cell text-12 px-3 py-2 text-center ${tone} ${isBase ? 'heatmap-cell-base' : 'heatmap-cell-regular'}`}
                     >
                       {isNaN(cell.price) ? 'N/A' : formatPrice(cell.price)}
                       {!isBase && delta && (
-                        <div
-                          className="text-11 mt-0.5"
-                          style={{
-                            color: cell.deltaVsBase >= 0 ? 'var(--color-bull)' : 'var(--color-bear)',
-                            fontFamily: 'DM Mono',
-                          }}
-                        >
+                        <div className={`text-11 mt-0.5 ${cell.deltaVsBase >= 0 ? 'heatmap-delta-pos' : 'heatmap-delta-neg'}`}>
                           {delta.slice(2, -1)}
                         </div>
                       )}
                       {isBase && (
-                        <div className="text-11 mt-0.5" style={{ color: 'var(--color-primary)' }}>base</div>
+                        <div className="heatmap-base-note text-11 mt-0.5">base</div>
                       )}
                     </td>
                   );
@@ -135,17 +100,17 @@ export function SensitivityHeatmap() {
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex items-center gap-3 text-11" style={{ fontFamily: 'Space Grotesk', color: 'var(--color-text-muted)' }}>
+      <div className="heatmap-legend mt-3 flex items-center gap-3 text-11">
         <div className="flex items-center gap-1">
-          <span className="w-4 h-3 inline-block rounded" style={{ background: 'rgba(248,81,73,0.35)' }} />
+          <span className="heatmap-legend-lower w-4 h-3 inline-block rounded" />
           Lower price
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-4 h-3 inline-block rounded" style={{ background: 'rgba(63,185,80,0.35)' }} />
+          <span className="heatmap-legend-higher w-4 h-3 inline-block rounded" />
           Higher price
         </div>
         <div className="flex items-center gap-1">
-          <span className="w-4 h-3 inline-block rounded" style={{ border: '2px solid var(--color-primary)' }} />
+          <span className="heatmap-legend-base w-4 h-3 inline-block rounded" />
           Base case
         </div>
       </div>

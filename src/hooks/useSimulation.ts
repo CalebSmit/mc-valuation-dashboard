@@ -25,7 +25,6 @@ interface UseSimulationReturn {
  */
 export function useSimulation(): UseSimulationReturn {
   const workerRef = useRef<Worker | null>(null);
-  const startTimeRef = useRef<number>(0);
 
   // Store reads
   const inputs = useInputsStore(s => s.inputs);
@@ -78,18 +77,15 @@ export function useSimulation(): UseSimulationReturn {
     setWarnings(validation.warnings);
     setIsRunning(true);
     setProgress(0);
-    startTimeRef.current = performance.now();
 
     // Spawn a fresh worker for each run
     const worker = new SimWorker();
     workerRef.current = worker;
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      const elapsed = performance.now() - startTimeRef.current;
-
       if (event.data.type === 'RESULT') {
         setOutput(event.data.payload);
-        setElapsedMs(elapsed);
+        setElapsedMs(event.data.payload.elapsedMs);
         setIsRunning(false);
         setProgress(100);
       } else {

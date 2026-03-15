@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { runMonteCarlo } from '../../src/engine/mcRunner';
 import { DEFAULT_INPUTS, DEFAULT_STRESS_VARS, DEFAULT_SCENARIO, DEFAULT_CONFIG } from '../../src/constants/finance';
 import type { SimulationResult } from '../../src/types/outputs';
+import type { StressVariableId } from '../../src/types/inputs';
 
 // ─── useExport tests ───────────────────────────────────────────────────────────
 // Tests the export data contract without a browser environment.
@@ -10,40 +11,33 @@ import type { SimulationResult } from '../../src/types/outputs';
 
 // ── CSV row shape ──────────────────────────────────────────────────────────────
 
-const EXPECTED_CSV_KEYS = [
-  'RunId',
-  'RevenueGrowth',
-  'EbitdaMargin',
-  'CapexPct',
-  'NWCPct',
-  'DAPct',
-  'WACC',
-  'TGR',
-  'ExitMultiple',
-  'TaxRate',
-  'Year1GrowthPremium',
-  'ImpliedEV',
-  'ImpliedPrice',
-] as const;
+const CSV_VARIABLE_COLUMNS: Record<StressVariableId, { header: string; getValue: (record: SimulationResult) => number }> = {
+  revenueGrowth: { header: 'RevenueGrowth', getValue: record => record.revenueGrowth },
+  ebitdaMargin: { header: 'EbitdaMargin', getValue: record => record.ebitdaMargin },
+  capexPct: { header: 'CapexPct', getValue: record => record.capexPct },
+  nwcPct: { header: 'NWCPct', getValue: record => record.nwcPct },
+  daPct: { header: 'DAPct', getValue: record => record.daPct },
+  wacc: { header: 'WACC', getValue: record => record.wacc },
+  tgr: { header: 'TGR', getValue: record => record.terminalGrowthRate },
+  exitMultiple: { header: 'ExitMultiple', getValue: record => record.exitMultiple },
+  taxRate: { header: 'TaxRate', getValue: record => record.taxRate },
+  year1GrowthPremium: { header: 'Year1GrowthPremium', getValue: record => record.year1GrowthPremium },
+};
 
-type CsvRow = Record<typeof EXPECTED_CSV_KEYS[number], number>;
+function buildCsvRows(records: SimulationResult[], activeVariableIds: StressVariableId[]): Record<string, number>[] {
+  return records.map((record, index) => {
+    const row: Record<string, number> = { RunId: index + 1 };
 
-function buildCsvRows(records: SimulationResult[]): CsvRow[] {
-  return records.map((r, i) => ({
-    RunId:              i + 1,
-    RevenueGrowth:      r.revenueGrowth,
-    EbitdaMargin:       r.ebitdaMargin,
-    CapexPct:           r.capexPct,
-    NWCPct:             r.nwcPct,
-    DAPct:              r.daPct,
-    WACC:               r.wacc,
-    TGR:                r.terminalGrowthRate,
-    ExitMultiple:       r.exitMultiple,
-    TaxRate:            r.taxRate,
-    Year1GrowthPremium: r.year1GrowthPremium,
-    ImpliedEV:          r.impliedEV,
-    ImpliedPrice:       r.impliedPrice,
-  }));
+    for (const variableId of activeVariableIds) {
+      const column = CSV_VARIABLE_COLUMNS[variableId];
+      row[column.header] = column.getValue(record);
+    }
+
+    row.ImpliedEV = record.impliedEV;
+    row.ImpliedPrice = record.impliedPrice;
+
+    return row;
+  });
 }
 
 describe('exportCSV row shape', () => {
@@ -54,16 +48,31 @@ describe('exportCSV row shape', () => {
     { ...DEFAULT_CONFIG, numRuns: 500, seed: 42 },
   );
 
-  const rows = buildCsvRows(output.runRecords);
+  const rows = buildCsvRows(output.runRecords, output.activeVariableIds);
 
   it('produces one row per valid run', () => {
     expect(rows.length).toBe(output.runRecords.length);
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it('row[0] has all 13 expected column keys', () => {
+  it('row[0] has all expected default column keys', () => {
     const row = rows[0];
-    for (const key of EXPECTED_CSV_KEYS) {
+    const expectedKeys = [
+      'RunId',
+      'RevenueGrowth',
+      'EbitdaMargin',
+      'CapexPct',
+      'NWCPct',
+      'DAPct',
+      'WACC',
+      'TGR',
+      'ExitMultiple',
+      'TaxRate',
+      'Year1GrowthPremium',
+      'ImpliedEV',
+      'ImpliedPrice',
+    ];
+    for (const key of expectedKeys) {
       expect(key in row, `Missing key: ${key}`).toBe(true);
     }
   });
@@ -81,10 +90,10 @@ describe('exportCSV row shape', () => {
   });
 
   it('all numeric values are finite (no NaN or Infinity)', () => {
-    const numericKeys = EXPECTED_CSV_KEYS.filter(k => k !== 'RunId') as (keyof CsvRow)[];
+    const numericKeys = Object.keys(rows[0]).filter(key => key !== 'RunId');
     for (const row of rows.slice(0, 50)) {
       for (const key of numericKeys) {
-        const val = row[key] as number;
+        const val = row[key];
         expect(isNaN(val), `NaN in ${key}`).toBe(false);
         expect(isFinite(val), `Infinite in ${key}`).toBe(true);
       }
@@ -96,6 +105,27 @@ describe('exportCSV row shape', () => {
       expect(row.WACC).toBeGreaterThan(0.01);
       expect(row.WACC).toBeLessThan(0.50);
     }
+  });
+
+  it('omits disabled variables from CSV row keys', () => {
+    const subsetVars = DEFAULT_STRESS_VARS.map(variable => (
+      variable.id === 'wacc' || variable.id === 'exitMultiple'
+        ? { ...variable, enabled: false }
+        : variable
+    ));
+
+    const subsetOutput = runMonteCarlo(
+      DEFAULT_INPUTS,
+      subsetVars,
+      DEFAULT_SCENARIO,
+      { ...DEFAULT_CONFIG, numRuns: 50, seed: 5 },
+    );
+
+    const subsetRows = buildCsvRows(subsetOutput.runRecords, subsetOutput.activeVariableIds);
+
+    expect(subsetRows[0].WACC).toBeUndefined();
+    expect(subsetRows[0].ExitMultiple).toBeUndefined();
+    expect(subsetRows[0].ImpliedPrice).toBeDefined();
   });
 });
 

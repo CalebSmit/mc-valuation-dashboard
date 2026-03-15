@@ -3,7 +3,8 @@ import { useResultsStore } from '../store/resultsSlice';
 import { useInputsStore } from '../store/inputsSlice';
 import { useConfigStore } from '../store/configSlice';
 import { useScenarioStore } from '../store/scenarioSlice';
-import type { SimulationInputs, StressVariable, SimulationConfig, ScenarioTargets } from '../types/inputs';
+import type { SimulationInputs, StressVariable, SimulationConfig, ScenarioTargets, StressVariableId } from '../types/inputs';
+import type { SimulationResult } from '../types/outputs';
 
 // ─── useExport ────────────────────────────────────────────────────────────────
 // Provides four export actions wired to current store state.
@@ -25,6 +26,19 @@ interface ConfigSnapshot {
   config: SimulationConfig;
   scenario: ScenarioTargets;
 }
+
+const CSV_VARIABLE_COLUMNS: Record<StressVariableId, { header: string; getValue: (record: SimulationResult) => number }> = {
+  revenueGrowth: { header: 'RevenueGrowth', getValue: record => record.revenueGrowth },
+  ebitdaMargin: { header: 'EbitdaMargin', getValue: record => record.ebitdaMargin },
+  capexPct: { header: 'CapexPct', getValue: record => record.capexPct },
+  nwcPct: { header: 'NWCPct', getValue: record => record.nwcPct },
+  daPct: { header: 'DAPct', getValue: record => record.daPct },
+  wacc: { header: 'WACC', getValue: record => record.wacc },
+  tgr: { header: 'TGR', getValue: record => record.terminalGrowthRate },
+  exitMultiple: { header: 'ExitMultiple', getValue: record => record.exitMultiple },
+  taxRate: { header: 'TaxRate', getValue: record => record.taxRate },
+  year1GrowthPremium: { header: 'Year1GrowthPremium', getValue: record => record.year1GrowthPremium },
+};
 
 export function useExport(): ExportHook {
   const output   = useResultsStore(s => s.output);
@@ -141,26 +155,24 @@ export function useExport(): ExportHook {
   }, [output, inputs, scenario]);
 
   // ── exportCSV ─────────────────────────────────────────────────────────────
-  // 13 columns: RunId + 10 stress vars + ImpliedEV + ImpliedPrice
+  // Dynamic columns: RunId + active stress vars + ImpliedEV + ImpliedPrice
   const exportCSV = useCallback((): boolean => {
     if (!output || output.runRecords.length === 0) return false;
 
     try {
-      const rows = output.runRecords.map((r, i) => ({
-        RunId:              i + 1,
-        RevenueGrowth:      r.revenueGrowth,
-        EbitdaMargin:       r.ebitdaMargin,
-        CapexPct:           r.capexPct,
-        NWCPct:             r.nwcPct,
-        DAPct:              r.daPct,
-        WACC:               r.wacc,
-        TGR:                r.terminalGrowthRate,
-        ExitMultiple:       r.exitMultiple,
-        TaxRate:            r.taxRate,
-        Year1GrowthPremium: r.year1GrowthPremium,
-        ImpliedEV:          r.impliedEV,
-        ImpliedPrice:       r.impliedPrice,
-      }));
+      const activeColumns = output.activeVariableIds.map(id => CSV_VARIABLE_COLUMNS[id]);
+      const rows = output.runRecords.map((record, index) => {
+        const row: Record<string, number> = { RunId: index + 1 };
+
+        for (const column of activeColumns) {
+          row[column.header] = column.getValue(record);
+        }
+
+        row['ImpliedEV'] = record.impliedEV;
+        row['ImpliedPrice'] = record.impliedPrice;
+
+        return row;
+      });
 
       // Dynamic import of xlsx (SheetJS)
       import('xlsx').then(({ utils, writeFile }) => {

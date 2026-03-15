@@ -34,32 +34,43 @@ export function StressVariableRow({ variable }: StressVariableRowProps) {
     setStressVar(variable.id, key, val);
 
   return (
-    <div className="mb-2 rounded" style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}>
+    <div
+      className={`stress-variable-card mb-2 rounded${variable.enabled ? '' : ' stress-variable-card-fixed'}`}
+    >
       {/* Row header — always visible */}
-      <div
-        className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
-        onClick={() => setExpanded(v => !v)}
-        role="button"
-        aria-expanded={expanded}
-        tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(v => !v); } }}
-      >
-        <span className="text-11" style={{ color: 'var(--color-text-faint)', width: '10px', flexShrink: 0 }}>
-          {expanded ? '▲' : '▼'}
-        </span>
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={variable.enabled}
+            onChange={e => set('enabled', e.target.checked)}
+            aria-label={`Use ${variable.label} in simulation`}
+            className="stress-variable-toggle"
+          />
+        </label>
 
-        <span className="text-12 flex-1 truncate" style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}>
-          {variable.label}
-        </span>
+        <button
+          type="button"
+          className="stress-variable-expand flex items-center gap-2 flex-1 min-w-0 p-0 text-left"
+          onClick={() => setExpanded(v => !v)}
+        >
+          <span className="stress-variable-chevron text-11">
+            {expanded ? '▲' : '▼'}
+          </span>
+
+          <span className="stress-variable-label text-12 flex-1 truncate">
+            {variable.label}
+          </span>
+        </button>
 
         {tooltip && (
-          <div onClick={e => e.stopPropagation()}>
+          <div>
             <TooltipIcon text={tooltip} />
           </div>
         )}
 
         {/* Mini distribution preview */}
-        <div onClick={e => e.stopPropagation()} className="flex-shrink-0">
+        <div className="flex-shrink-0">
           <DistributionPreview
             distribution={variable.distribution}
             mean={variable.mean}
@@ -72,19 +83,24 @@ export function StressVariableRow({ variable }: StressVariableRowProps) {
 
         {/* Mean value badge */}
         <span
-          className="text-12 flex-shrink-0 w-16 text-right"
-          style={{ color: 'var(--color-primary)', fontFamily: 'DM Mono' }}
+          className={`stress-variable-mean text-12 flex-shrink-0 w-16 text-right ${variable.enabled ? 'stress-variable-mean-active' : 'stress-variable-mean-fixed'}`}
         >
           {fmt(variable.mean)}{units}
+        </span>
+
+        <span
+          className={`stress-variable-status text-11 flex-shrink-0 w-10 text-right uppercase ${variable.enabled ? 'stress-variable-status-active' : 'stress-variable-status-fixed'}`}
+        >
+          {variable.enabled ? 'On' : 'Fixed'}
         </span>
       </div>
 
       {/* Expanded controls */}
       {expanded && (
-        <div className="px-3 py-2" style={{ borderTop: '1px solid var(--color-border)' }}>
+        <div className="stress-variable-controls px-3 py-2">
           {/* Distribution type selector */}
           <div className="flex items-center gap-1 mb-3">
-            <span className="text-11 flex-shrink-0" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk', width: '72px' }}>
+            <span className="stress-variable-controls-label text-11 flex-shrink-0">
               Distribution
             </span>
             <div className="flex gap-1 flex-wrap">
@@ -93,14 +109,7 @@ export function StressVariableRow({ variable }: StressVariableRowProps) {
                   key={dt}
                   type="button"
                   onClick={() => set('distribution', dt)}
-                  className="text-11 px-2 py-0.5 rounded"
-                  style={{
-                    background: variable.distribution === dt ? 'var(--color-primary)' : 'var(--color-surface)',
-                    color: variable.distribution === dt ? 'var(--color-bg)' : 'var(--color-text-muted)',
-                    border: `1px solid ${variable.distribution === dt ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                    fontFamily: 'Space Grotesk',
-                    cursor: 'pointer',
-                  }}
+                  className={`stress-variable-dist-button text-11 px-2 py-0.5 rounded ${variable.distribution === dt ? 'stress-variable-dist-button-active' : 'stress-variable-dist-button-inactive'}`}
                 >
                   {DISTRIBUTION_LABELS[dt]}
                 </button>
@@ -133,20 +142,22 @@ export function StressVariableRow({ variable }: StressVariableRowProps) {
           {/* Min / Max inline */}
           <div className="flex gap-2">
             <div className="flex-1">
-              <span className="text-11 block mb-1" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>Min</span>
+              <span className="stress-variable-minmax-label text-11 block mb-1">Min</span>
               <input
                 type="number"
                 className="mc-input text-12"
+                aria-label={`${variable.label} minimum value`}
                 value={(variable.min * scale).toFixed(1)}
                 step={isPct ? 0.5 : 0.5}
                 onChange={e => set('min', parseFloat(e.target.value) / scale)}
               />
             </div>
             <div className="flex-1">
-              <span className="text-11 block mb-1" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>Max</span>
+              <span className="stress-variable-minmax-label text-11 block mb-1">Max</span>
               <input
                 type="number"
                 className="mc-input text-12"
+                aria-label={`${variable.label} maximum value`}
                 value={(variable.max * scale).toFixed(1)}
                 step={isPct ? 0.5 : 0.5}
                 onChange={e => set('max', parseFloat(e.target.value) / scale)}

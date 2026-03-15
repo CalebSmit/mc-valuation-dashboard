@@ -13,6 +13,8 @@ export function StressVariables() {
 
   const incomeVars = stressVars.filter(v => v.group === 'incomeStatement');
   const valuationVars = stressVars.filter(v => v.group === 'valuation');
+  const activeIncomeCount = incomeVars.filter(v => v.enabled).length;
+  const activeValuationCount = valuationVars.filter(v => v.enabled).length;
 
   return (
     <SectionCard title={SECTION_TITLES.stressVars}>
@@ -22,6 +24,7 @@ export function StressVariables() {
         open={incomeOpen}
         onToggle={() => setIncomeOpen(v => !v)}
         count={incomeVars.length}
+        activeCount={activeIncomeCount}
       />
       {incomeOpen && (
         <div className="mb-2">
@@ -37,6 +40,7 @@ export function StressVariables() {
         open={valuationOpen}
         onToggle={() => setValuationOpen(v => !v)}
         count={valuationVars.length}
+        activeCount={activeValuationCount}
       />
       {valuationOpen && (
         <div>
@@ -56,32 +60,25 @@ interface GroupHeaderProps {
   open: boolean;
   onToggle: () => void;
   count: number;
+  activeCount: number;
 }
 
-function GroupHeader({ label, open, onToggle, count }: GroupHeaderProps) {
+function GroupHeader({ label, open, onToggle, count, activeCount }: GroupHeaderProps) {
   return (
-    <div
-      className="flex items-center justify-between py-1.5 px-1 mb-1 cursor-pointer rounded"
+    <button
+      type="button"
+      className="stress-group-header flex items-center justify-between py-1.5 px-1 mb-1 cursor-pointer rounded"
       onClick={onToggle}
-      role="button"
-      aria-expanded={open}
-      tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
-      style={{
-        background: 'transparent',
-        borderBottom: '1px solid var(--color-border)',
-        marginBottom: '8px',
-      }}
     >
-      <span className="text-11 uppercase font-semibold tracking-wider" style={{ color: 'var(--color-primary)', fontFamily: 'Space Grotesk', letterSpacing: '0.08em' }}>
+      <span className="stress-group-label text-11 uppercase font-semibold tracking-wider">
         {label}
       </span>
       <div className="flex items-center gap-2">
-        <span className="text-11 rounded-full px-1.5 py-0.5" style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)', fontFamily: 'DM Mono' }}>
-          {count}
+        <span className="stress-group-count text-11 rounded-full px-1.5 py-0.5">
+          {activeCount}/{count}
         </span>
-        <span className="text-11" style={{ color: 'var(--color-text-faint)' }}>{open ? '▲' : '▼'}</span>
+        <span className="stress-group-chevron text-11">{open ? '▲' : '▼'}</span>
       </div>
-    </div>
+    </button>
   );
 }

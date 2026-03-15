@@ -5,6 +5,7 @@ import { SectionCard } from '../shared/SectionCard';
 import { SECTION_TITLES, SECTION_SUBTITLES, TOOLTIPS } from '../../constants/labels';
 import { TooltipIcon } from '../shared/TooltipIcon';
 import { formatDelta, formatProbability } from '../../utils/formatters';
+import { deriveScenarioProbabilities } from '../../utils/scenarioProbabilities';
 
 // ─── ScenarioTargets ──────────────────────────────────────────────────────────
 
@@ -15,6 +16,9 @@ export function ScenarioTargets() {
   const setBull = useScenarioStore(s => s.setBull);
   const currentPrice = useInputsStore(s => s.inputs.currentPrice);
   const output = useResultsStore(s => s.output);
+  const liveProbabilities = output
+    ? deriveScenarioProbabilities(output.results, scenario)
+    : null;
 
   const updown = (target: number) => {
     if (!currentPrice) return '—';
@@ -54,10 +58,17 @@ export function ScenarioTargets() {
     },
   ] as const;
 
+  const scenariosWithLiveProb = scenarios.map(s => {
+    if (!liveProbabilities) return s;
+    if (s.key === 'bear') return { ...s, prob: liveProbabilities.probAboveBear };
+    if (s.key === 'base') return { ...s, prob: liveProbabilities.probAboveBase };
+    return { ...s, prob: liveProbabilities.probAboveBull };
+  });
+
   return (
     <SectionCard title={SECTION_TITLES.scenario} subtitle={SECTION_SUBTITLES.scenario}>
       <div className="flex flex-col gap-3">
-        {scenarios.map(s => (
+        {scenariosWithLiveProb.map(s => (
           <div key={s.key}>
             <div
               className={`scenario-target-card scenario-target-card-${s.tone} rounded p-2`}

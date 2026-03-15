@@ -4,6 +4,7 @@ import { useInputsStore } from '../../store/inputsSlice';
 import { formatPrice, formatProbability, formatRunCount, formatTimestamp, formatMultiple } from '../../utils/formatters';
 import { STAT_LABELS } from '../../constants/labels';
 import { TooltipIcon } from '../shared/TooltipIcon';
+import { deriveScenarioProbabilities } from '../../utils/scenarioProbabilities';
 
 // ─── StatsPanel ───────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export function StatsPanel() {
   const highDiscardRate = discardRate > 0.02;
 
   const evEbitda = output.impliedEvEbitda;
+  const liveProbabilities = deriveScenarioProbabilities(output.results, scenario);
 
   // Fat tail warning: P95/P5 > 5× is concerning
   const fatTail = !isNaN(output.tailRatio) && output.tailRatio > 5;
@@ -51,9 +53,9 @@ export function StatsPanel() {
     { label: STAT_LABELS.p90,  value: formatPrice(output.percentiles[90]) },
     { label: STAT_LABELS.p95,  value: formatPrice(output.percentiles[95]) },
     { label: '', value: '', header: 'SCENARIO PROBABILITIES' },
-    { label: STAT_LABELS.probAboveBear, value: formatProbability(output.probAboveBear), variant: 'bear' },
-    { label: STAT_LABELS.probAboveBase, value: formatProbability(output.probAboveBase), variant: 'base' },
-    { label: STAT_LABELS.probAboveBull, value: formatProbability(output.probAboveBull), variant: 'bull' },
+    { label: STAT_LABELS.probAboveBear, value: formatProbability(liveProbabilities.probAboveBear), variant: 'bear' },
+    { label: STAT_LABELS.probAboveBase, value: formatProbability(liveProbabilities.probAboveBase), variant: 'base' },
+    { label: STAT_LABELS.probAboveBull, value: formatProbability(liveProbabilities.probAboveBull), variant: 'bull' },
     { label: '', value: '', header: 'RISK METRICS' },
     {
       label: STAT_LABELS.var95,

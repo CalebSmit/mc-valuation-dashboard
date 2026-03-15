@@ -31,6 +31,8 @@ interface WizardData {
   // Step 4
   wacc: number; // as percentage (e.g. 10)
   terminalValueMethod: 'ggm' | 'exitMultiple';
+  terminalGrowthRate: number;  // as percentage (e.g. 2.5 for 2.5%)
+  exitMultipleValue: number;   // e.g. 12 for 12x EV/EBITDA
 }
 
 const TOTAL_STEPS = 5;
@@ -59,6 +61,8 @@ function defaultWizardData(): WizardData {
     fcfProjections: [0, 0, 0, 0, 0],
     wacc: 10,
     terminalValueMethod: 'ggm',
+    terminalGrowthRate: 2.5,
+    exitMultipleValue: 12,
   };
 }
 
@@ -186,7 +190,14 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
     // 4. WACC
     syncWaccToStressVar(data.wacc / 100);
 
-    // 5. Derive scenario targets from price
+    // 5. Set terminal value stress variable from wizard input
+    if (data.terminalValueMethod === 'ggm') {
+      setStressVar('tgr', 'mean', data.terminalGrowthRate / 100);
+    } else {
+      setStressVar('exitMultiple', 'mean', data.exitMultipleValue);
+    }
+
+    // 6. Derive scenario targets from price
     if (data.currentPrice > 0) {
       deriveFromPrice(data.currentPrice);
     }
@@ -404,6 +415,19 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
                   </span>
                 </button>
               </div>
+
+              {/* Conditional terminal value parameter input */}
+              <div className="wizard-field-group mt-4">
+                {data.terminalValueMethod === 'ggm' ? (
+                  <WizardField label="Terminal Growth Rate" unit="%" hint="The rate cash flows grow forever after the projection period. 2-3% is typical (roughly GDP growth)." required>
+                    <input className="mc-input" type="number" value={data.terminalGrowthRate || ''} placeholder="2.5" min={0} max={10} step={0.1} onChange={e => update('terminalGrowthRate', parseFloat(e.target.value) || 0)} />
+                  </WizardField>
+                ) : (
+                  <WizardField label="EV/EBITDA Exit Multiple" unit="x" hint="The multiple applied to terminal year EBITDA. Check comparable company trading multiples for a reasonable range." required>
+                    <input className="mc-input" type="number" value={data.exitMultipleValue || ''} placeholder="12" min={1} max={50} step={0.5} onChange={e => update('exitMultipleValue', parseFloat(e.target.value) || 0)} />
+                  </WizardField>
+                )}
+              </div>
             </div>
           )}
 
@@ -438,7 +462,7 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
                 </ReviewGroup>
                 <ReviewGroup label="Valuation">
                   <ReviewRow label="WACC" value={`${data.wacc}%`} />
-                  <ReviewRow label="Terminal Value" value={data.terminalValueMethod === 'ggm' ? 'Gordon Growth Model' : 'Exit Multiple'} />
+                  <ReviewRow label="Terminal Value" value={data.terminalValueMethod === 'ggm' ? `Gordon Growth Model (${data.terminalGrowthRate}%)` : `Exit Multiple (${data.exitMultipleValue.toFixed(1)}x)`} />
                 </ReviewGroup>
               </div>
               <div className="wizard-hint-box mt-3">

@@ -32,7 +32,7 @@ export function registerChartDefaults(): void {
   ChartJS.defaults.borderColor = '#30363d';
   ChartJS.defaults.font.family = 'DM Mono';
   ChartJS.defaults.font.size = 12;
-  ChartJS.defaults.animation = { duration: 400 };
+  ChartJS.defaults.animation = false;
 }
 
 // ─── Shared Dark Theme Options ────────────────────────────────────────────────
@@ -40,6 +40,7 @@ export function registerChartDefaults(): void {
 export const darkChartDefaults = {
   responsive: true,
   maintainAspectRatio: false,
+  animation: false,
   plugins: {
     legend: {
       labels: {

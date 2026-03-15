@@ -57,10 +57,6 @@ export function useHistogramData(): HistogramChartData {
 
     return {
       ...darkChartDefaults,
-      animation: {
-        duration: 400,
-        easing: 'easeOutQuart',
-      },
       plugins: {
         ...darkChartDefaults.plugins,
         legend: { display: false },

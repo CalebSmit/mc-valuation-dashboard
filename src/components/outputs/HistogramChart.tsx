@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import type { Chart as ChartJSType, ChartTypeRegistry } from 'chart.js';
 import { useHistogramData } from '../../hooks/useHistogramData';
@@ -24,12 +24,6 @@ export function HistogramChart() {
   const scenario = useScenarioStore(s => s.scenario);
   const currentPrice = useInputsStore(s => s.inputs.currentPrice);
   const { runSimulation } = useSimulation();
-
-  // Re-color bars when scenario changes without re-running simulation
-  useEffect(() => {
-    if (!chartRef.current || !output) return;
-    chartRef.current.update('none'); // 'none' = skip animation for recolor
-  }, [scenario.bear, scenario.bull, output]);
 
   if (!hasData) {
     return <EmptyState onRun={runSimulation} error={error} />;

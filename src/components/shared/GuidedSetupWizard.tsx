@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInputsStore } from '../../store/inputsSlice';
+import { useConfigStore } from '../../store/configSlice';
 import { useScenarioStore } from '../../store/scenarioSlice';
 import type { ProjectionMode } from '../../types/inputs';
 
@@ -76,6 +77,7 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
   const setFcfProjection = useInputsStore(s => s.setFcfProjection);
   const syncWaccToStressVar = useInputsStore(s => s.syncWaccToStressVar);
   const setStressVar = useInputsStore(s => s.setStressVar);
+  const setTerminalValueMethod = useConfigStore(s => s.setTerminalValueMethod);
   const deriveFromPrice = useScenarioStore(s => s.deriveFromPrice);
 
   // Reset wizard when opened
@@ -161,7 +163,7 @@ export function GuidedSetupWizard({ open, onClose }: GuidedSetupWizardProps) {
     setInput('totalDebt', data.totalDebt);
     setInput('cashAndEquiv', data.cashAndEquiv);
     setInput('projectionYears', data.projectionYears);
-    setInput('terminalValueMethod', data.terminalValueMethod);
+    setTerminalValueMethod(data.terminalValueMethod);
 
     // 2. Set projection mode
     setProjectionMode(data.projectionMode);

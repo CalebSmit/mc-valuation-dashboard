@@ -76,6 +76,7 @@ export const TOOLTIPS = {
   numRuns: 'More runs = higher statistical precision but slower execution. 10,000 is the recommended default (< 3 seconds).',
   seed: 'Setting a seed makes the simulation reproducible — same inputs + same seed = identical results every run. Leave blank for a random run.',
   samplingMethod: 'Standard Monte Carlo draws independently from each variable\'s distribution. Latin Hypercube Sampling (LHS) ensures the full range of each variable is covered more efficiently — equivalent confidence with fewer runs.',
+  distributionLognormal: 'For Log-Normal distributions, Mean and Std Dev are interpreted in log space. This is useful for strictly positive, right-skewed variables.',
   midYearConvention: 'When enabled, cash flows are discounted at mid-year (t \u2212 0.5) rather than end-of-year. This is standard sell-side practice and typically increases implied value by 3\u20136% depending on WACC and forecast horizon.',
   revenueGrowth: 'Year-over-year revenue growth rate (%). Applied to each projection year. Year 1 adds the Year 1 Premium on top.',
   ebitdaMargin: 'EBITDA as a % of revenue. Applied to each projection year\'s revenue to compute EBITDA.',

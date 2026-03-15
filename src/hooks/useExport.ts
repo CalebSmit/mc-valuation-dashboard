@@ -5,6 +5,7 @@ import { useConfigStore } from '../store/configSlice';
 import { useScenarioStore } from '../store/scenarioSlice';
 import type { SimulationInputs, StressVariable, SimulationConfig, ScenarioTargets, StressVariableId } from '../types/inputs';
 import type { SimulationResult } from '../types/outputs';
+import { deriveScenarioProbabilities } from '../utils/scenarioProbabilities';
 
 // ─── useExport ────────────────────────────────────────────────────────────────
 // Provides four export actions wired to current store state.
@@ -51,6 +52,9 @@ export function useExport(): ExportHook {
   const stressVars = useInputsStore(s => s.stressVars);
   const config   = useConfigStore(s => s.config);
   const scenario = useScenarioStore(s => s.scenario);
+  const liveProbabilities = output
+    ? deriveScenarioProbabilities(output.results, scenario)
+    : null;
 
   const loadInputs   = useInputsStore(s => s.loadInputs);
   const loadStressVars = useInputsStore(s => s.loadStressVars);
@@ -121,9 +125,9 @@ export function useExport(): ExportHook {
       // ── Stats summary at bottom ──
       const statsY = imgY + displayH + 6;
       const stats = [
-        ['Bear', `$${scenario.bear.toFixed(2)}`, `P(>${scenario.bear.toFixed(0)}) ${(output.probAboveBear * 100).toFixed(1)}%`],
-        ['Base', `$${scenario.base.toFixed(2)}`, `P(>${scenario.base.toFixed(0)}) ${(output.probAboveBase * 100).toFixed(1)}%`],
-        ['Bull', `$${scenario.bull.toFixed(2)}`, `P(>${scenario.bull.toFixed(0)}) ${(output.probAboveBull * 100).toFixed(1)}%`],
+        ['Bear', `$${scenario.bear.toFixed(2)}`, `P(>${scenario.bear.toFixed(0)}) ${(((liveProbabilities?.probAboveBear ?? output.probAboveBear) * 100)).toFixed(1)}%`],
+        ['Base', `$${scenario.base.toFixed(2)}`, `P(>${scenario.base.toFixed(0)}) ${(((liveProbabilities?.probAboveBase ?? output.probAboveBase) * 100)).toFixed(1)}%`],
+        ['Bull', `$${scenario.bull.toFixed(2)}`, `P(>${scenario.bull.toFixed(0)}) ${(((liveProbabilities?.probAboveBull ?? output.probAboveBull) * 100)).toFixed(1)}%`],
         ['P5',   `$${output.percentiles[5].toFixed(2)}`, ''],
         ['P25',  `$${output.percentiles[25].toFixed(2)}`, ''],
         ['P75',  `$${output.percentiles[75].toFixed(2)}`, ''],
@@ -157,7 +161,7 @@ export function useExport(): ExportHook {
       console.error('[exportPDF]', err);
       return false;
     }
-  }, [output, inputs, scenario]);
+  }, [output, inputs, scenario, liveProbabilities]);
 
   // ── exportCSV ─────────────────────────────────────────────────────────────
   // Dynamic columns: RunId + active stress vars + ImpliedEV + ImpliedPrice
@@ -405,9 +409,9 @@ export function useExport(): ExportHook {
       ry += 28;
 
       const scenarios = [
-        { label: 'Bear', price: scenario.bear, prob: output.probAboveBear, color: t.bear },
-        { label: 'Base', price: scenario.base, prob: output.probAboveBase, color: t.base },
-        { label: 'Bull', price: scenario.bull, prob: output.probAboveBull, color: t.bull },
+        { label: 'Bear', price: scenario.bear, prob: liveProbabilities?.probAboveBear ?? output.probAboveBear, color: t.bear },
+        { label: 'Base', price: scenario.base, prob: liveProbabilities?.probAboveBase ?? output.probAboveBase, color: t.base },
+        { label: 'Bull', price: scenario.bull, prob: liveProbabilities?.probAboveBull ?? output.probAboveBull, color: t.bull },
       ];
 
       for (const s of scenarios) {
@@ -436,7 +440,7 @@ export function useExport(): ExportHook {
       console.error('[renderSnapshot]', err);
       return null;
     }
-  }, [output, inputs, scenario]);
+  }, [output, inputs, scenario, liveProbabilities]);
 
   // ── copySnapshotToClipboard ─────────────────────────────────────────────
   // Takes a data URL and copies it to the clipboard as a PNG image.

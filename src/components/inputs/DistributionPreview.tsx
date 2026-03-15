@@ -38,11 +38,11 @@ export function DistributionPreview({ distribution, mean, stdDev, min, max, most
 
   return (
     <svg
+      className="distribution-preview-svg"
       width={W}
       height={H}
       viewBox={`0 0 ${W} ${H}`}
       aria-hidden
-      style={{ display: 'block', flexShrink: 0 }}
     >
       <path
         d={path}

@@ -229,6 +229,10 @@ export function MethodologyModal({ open, onClose }: MethodologyModalProps) {
                 </tr>
               </tbody>
             </table>
+            <p className="method-tip">
+              <strong>Important:</strong> In this dashboard, Log-Normal <em>Mean</em> and <em>Std Dev</em> are interpreted in log space, not linear percentage space.
+              Use Normal or Triangular if you want direct linear % intuition for parameter inputs.
+            </p>
 
             <h4 className="method-subheader">Calibrating from Historical Data</h4>
             <p>
@@ -363,7 +367,7 @@ export function MethodologyModal({ open, onClose }: MethodologyModalProps) {
               <li><strong>Std Dev:</strong> Measures total uncertainty. Higher = wider range of outcomes.</li>
               <li><strong>Percentiles (P5–P95):</strong> The range within which 90% of simulated prices fall. P5 is the downside; P95 is the upside.</li>
               <li><strong>P(Price &gt; Bear/Base/Bull):</strong> Probability of exceeding each scenario target.</li>
-              <li><strong>VaR 95%:</strong> Value at Risk — the maximum loss in the best 95% of outcomes (5th percentile minus current price).</li>
+              <li><strong>VaR 95%:</strong> Value at Risk — loss threshold at 95% confidence (current price minus 5th percentile).</li>
               <li><strong>CVaR 95%:</strong> Conditional VaR (Expected Shortfall) — the average loss in the worst 5% of outcomes. More conservative than VaR.</li>
               <li><strong>Implied EV/EBITDA:</strong> Sanity check — if this is extremely high (&gt;30×) or low (&lt;3×), revisit your inputs.</li>
               <li><strong>Tail Ratio:</strong> P95/P5. If &gt;5×, the distribution has fat tails — consider tightening variable ranges.</li>

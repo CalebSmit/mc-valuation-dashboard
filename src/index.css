@@ -427,6 +427,111 @@ input[type='range']::-moz-range-thumb {
   cursor: pointer;
 }
 
+/* ─── Run Button ───────────────────────────────────────────────────────── */
+.run-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 600;
+  transition: background 150ms ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.run-btn-regular {
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+}
+
+.run-btn-compact {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.run-btn-idle {
+  background: var(--color-primary);
+}
+
+.run-btn-running {
+  background: var(--color-primary-dim);
+}
+
+.run-btn-enabled {
+  color: var(--color-bg);
+  cursor: pointer;
+}
+
+.run-btn-disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.run-btn-progress {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  transform-origin: left;
+  transition: transform 80ms linear;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.run-btn-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+@keyframes run-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.run-btn-spinner {
+  animation: run-btn-spin 0.8s linear infinite;
+}
+
+/* ─── Slider Field ─────────────────────────────────────────────────────── */
+.slider-field-label {
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.slider-field-input {
+  width: 72px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.slider-field-input:focus {
+  border-color: var(--color-primary);
+}
+
+.slider-field-units {
+  color: var(--color-text-faint);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  min-width: 24px;
+}
+
+/* ─── Distribution Preview ─────────────────────────────────────────────── */
+.distribution-preview-svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 /* ─── Stats Panel ────────────────────────────────────────────────────────── */
 .stats-empty {
   color: var(--color-text-faint);

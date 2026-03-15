@@ -45,9 +45,9 @@ export function SliderWithInput({
   }, [onChange, parse, min, max]);
 
   return (
-    <div className="mb-2">
+    <div className="slider-field mb-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-12" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <span className="slider-field-label text-12">
           {label}
         </span>
         <div className="flex items-center gap-1">
@@ -58,21 +58,12 @@ export function SliderWithInput({
             min={min}
             max={max}
             onChange={handleInput}
-            className="text-right text-12 rounded"
-            style={{
-              width: '72px',
-              background: 'var(--color-surface-alt)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-primary)',
-              fontFamily: 'DM Mono',
-              padding: '2px 4px',
-              outline: 'none',
-            }}
-            onFocus={e => (e.target.style.borderColor = 'var(--color-primary)')}
-            onBlur={e => (e.target.style.borderColor = 'var(--color-border)')}
+            className="slider-field-input text-right text-12 rounded"
+            aria-label={`${label} value`}
+            title={`${label} value`}
           />
           {units && (
-            <span className="text-11" style={{ color: 'var(--color-text-faint)', fontFamily: 'DM Mono', minWidth: '24px' }}>
+            <span className="slider-field-units text-11">
               {units}
             </span>
           )}
@@ -87,9 +78,6 @@ export function SliderWithInput({
         onChange={handleSlider}
         className="w-full"
         aria-label={label}
-        aria-valuenow={value}
-        aria-valuemin={min}
-        aria-valuemax={max}
         aria-valuetext={displayValue}
       />
     </div>

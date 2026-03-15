@@ -303,7 +303,7 @@ export function useExport(): ExportHook {
       // Compose final image on offscreen canvas
       const padding = 32;
       const headerH = 52;
-      const statsH = 80;
+      const statsH = 168;
       const totalW = chartCanvas.width + padding * 2;
       const totalH = headerH + chartCanvas.height + statsH + padding * 2;
 
@@ -328,40 +328,107 @@ export function useExport(): ExportHook {
       // Chart image
       fCtx.drawImage(chartCanvas, padding, headerH + padding);
 
-      // Stats rows at bottom
-      const statsY = headerH + padding + chartCanvas.height + 12;
-      fCtx.font = '20px DM Mono, monospace';
-
+      // ── Stats card at bottom ──
       const formatP = (v: number) => `$${v.toFixed(2)}`;
       const formatPct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
-      // Row 1: Mean, Median, P5, P95
-      const stats = [
-        `Mean: ${formatP(output.mean)}`,
-        `Median: ${formatP(output.median)}`,
-        `P5: ${formatP(output.percentiles[5])}`,
-        `P95: ${formatP(output.percentiles[95])}`,
+      const cardX = padding;
+      const cardY = headerH + padding + chartCanvas.height + 16;
+      const cardW = chartCanvas.width;
+      const cardH = statsH - 24;
+      const cardPad = 20;
+      const cardR = 8;
+
+      // Draw rounded-rect card background
+      fCtx.fillStyle = '#1f2937';
+      fCtx.strokeStyle = '#30363d';
+      fCtx.lineWidth = 2;
+      fCtx.beginPath();
+      fCtx.moveTo(cardX + cardR, cardY);
+      fCtx.lineTo(cardX + cardW - cardR, cardY);
+      fCtx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + cardR, cardR);
+      fCtx.lineTo(cardX + cardW, cardY + cardH - cardR);
+      fCtx.arcTo(cardX + cardW, cardY + cardH, cardX + cardW - cardR, cardY + cardH, cardR);
+      fCtx.lineTo(cardX + cardR, cardY + cardH);
+      fCtx.arcTo(cardX, cardY + cardH, cardX, cardY + cardH - cardR, cardR);
+      fCtx.lineTo(cardX, cardY + cardR);
+      fCtx.arcTo(cardX, cardY, cardX + cardR, cardY, cardR);
+      fCtx.closePath();
+      fCtx.fill();
+      fCtx.stroke();
+
+      const colMid = cardX + cardW * 0.42;
+      const leftX = cardX + cardPad;
+      const rightX = colMid + cardPad;
+
+      // ── Left column: Expected Value ──
+      let ly = cardY + cardPad + 16;
+      fCtx.fillStyle = '#484f58';
+      fCtx.font = 'bold 14px DM Mono, monospace';
+      fCtx.fillText('EXPECTED VALUE', leftX, ly);
+      ly += 32;
+
+      // Mean
+      fCtx.fillStyle = '#8b949e';
+      fCtx.font = '16px DM Mono, monospace';
+      fCtx.fillText('Mean', leftX, ly);
+      fCtx.fillStyle = '#f0b429';
+      fCtx.font = 'bold 22px DM Mono, monospace';
+      fCtx.fillText(formatP(output.mean), leftX + 120, ly);
+      ly += 30;
+
+      // Median
+      fCtx.fillStyle = '#8b949e';
+      fCtx.font = '16px DM Mono, monospace';
+      fCtx.fillText('Median', leftX, ly);
+      fCtx.fillStyle = '#f0b429';
+      fCtx.font = 'bold 22px DM Mono, monospace';
+      fCtx.fillText(formatP(output.median), leftX + 120, ly);
+
+      // ── Vertical divider ──
+      fCtx.beginPath();
+      fCtx.strokeStyle = '#30363d';
+      fCtx.lineWidth = 1;
+      fCtx.moveTo(colMid, cardY + cardPad);
+      fCtx.lineTo(colMid, cardY + cardH - cardPad);
+      fCtx.stroke();
+
+      // ── Right column: Scenario Targets ──
+      let ry = cardY + cardPad + 16;
+      fCtx.fillStyle = '#484f58';
+      fCtx.font = 'bold 14px DM Mono, monospace';
+      fCtx.fillText('SCENARIO TARGETS', rightX, ry);
+      ry += 28;
+
+      const scenarios = [
+        { label: 'Bear', price: scenario.bear, prob: output.probAboveBear, color: '#f85149' },
+        { label: 'Base', price: scenario.base, prob: output.probAboveBase, color: '#8b949e' },
+        { label: 'Bull', price: scenario.bull, prob: output.probAboveBull, color: '#3fb950' },
       ];
 
-      let sx = padding;
-      for (const stat of stats) {
-        fCtx.fillStyle = '#8b949e';
-        fCtx.fillText(stat, sx, statsY + 20);
-        sx += fCtx.measureText(stat).width + 48;
-      }
-
-      // Row 2: Bear / Base / Bull targets with P(>) probabilities
-      const scenarioStats: { label: string; color: string }[] = [
-        { label: `Bear: ${formatP(scenario.bear)}  (P>: ${formatPct(output.probAboveBear)})`, color: '#f85149' },
-        { label: `Base: ${formatP(scenario.base)}  (P>: ${formatPct(output.probAboveBase)})`, color: '#8b949e' },
-        { label: `Bull: ${formatP(scenario.bull)}  (P>: ${formatPct(output.probAboveBull)})`, color: '#3fb950' },
-      ];
-
-      let sx2 = padding;
-      for (const s of scenarioStats) {
+      for (const s of scenarios) {
+        // Colored dot
+        fCtx.beginPath();
         fCtx.fillStyle = s.color;
-        fCtx.fillText(s.label, sx2, statsY + 50);
-        sx2 += fCtx.measureText(s.label).width + 48;
+        fCtx.arc(rightX + 6, ry - 5, 5, 0, Math.PI * 2);
+        fCtx.fill();
+
+        // Label
+        fCtx.fillStyle = s.color;
+        fCtx.font = 'bold 16px DM Mono, monospace';
+        fCtx.fillText(s.label, rightX + 20, ry);
+
+        // Price
+        fCtx.fillStyle = '#e6edf3';
+        fCtx.font = '18px DM Mono, monospace';
+        fCtx.fillText(formatP(s.price), rightX + 100, ry);
+
+        // Prob above
+        fCtx.fillStyle = '#8b949e';
+        fCtx.font = '14px DM Mono, monospace';
+        fCtx.fillText(`Prob. Above: ${formatPct(s.prob)}`, rightX + 260, ry);
+
+        ry += 28;
       }
 
       // Copy to clipboard

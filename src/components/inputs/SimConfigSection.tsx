@@ -1,6 +1,6 @@
 import { useConfigStore } from '../../store/configSlice';
 import { SectionCard } from '../shared/SectionCard';
-import { SECTION_TITLES, FIELD_LABELS, TOOLTIPS, SAMPLING_LABELS, TV_METHOD_LABELS } from '../../constants/labels';
+import { SECTION_TITLES, SECTION_SUBTITLES, FIELD_LABELS, TOOLTIPS, SAMPLING_LABELS, TV_METHOD_LABELS } from '../../constants/labels';
 import { TooltipIcon } from '../shared/TooltipIcon';
 import { formatRunCount } from '../../utils/formatters';
 import type { NumRuns } from '../../types/inputs';
@@ -18,7 +18,7 @@ export function SimConfigSection() {
   const setMidYearConvention = useConfigStore(s => s.setMidYearConvention);
 
   return (
-    <SectionCard title={SECTION_TITLES.simConfig}>
+    <SectionCard title={SECTION_TITLES.simConfig} subtitle={SECTION_SUBTITLES.simConfig}>
       {/* Run count */}
       <div className="mb-3">
         <div className="flex items-center gap-1 mb-2">

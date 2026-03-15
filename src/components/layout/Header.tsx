@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useInputsStore } from '../../store/inputsSlice';
 import { useResultsStore } from '../../store/resultsSlice';
 import { useSimulation } from '../../hooks/useSimulation';
 import { useExport } from '../../hooks/useExport';
 import { ExportMenu } from '../shared/ExportMenu';
 import { RunButton } from '../shared/RunButton';
+import { MethodologyModal } from '../shared/MethodologyModal';
 import { formatLargeNumber, formatPrice } from '../../utils/formatters';
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -15,6 +17,7 @@ export function Header() {
   const output = useResultsStore(s => s.output);
   const elapsedMs = useResultsStore(s => s.elapsedMs);
   const { exportPDF, exportCSV, exportConfig, importConfig } = useExport();
+  const [methodOpen, setMethodOpen] = useState(false);
 
   const impliedMarketCap =
     inputs.currentPrice > 0 && inputs.sharesOutstanding > 0
@@ -31,6 +34,7 @@ export function Header() {
   })();
 
   return (
+    <>
     <header
       className="header-shell flex-shrink-0 flex items-center justify-between px-5 py-3 gap-4"
     >
@@ -114,6 +118,21 @@ export function Header() {
         </span>
       </div>
 
+      {/* ── Methodology button ─────────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => setMethodOpen(true)}
+        className="header-guide-btn text-12 px-3 py-2 rounded flex items-center gap-1.5"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
+          <rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+          <line x1="5" y1="4.5" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          <line x1="5" y1="7" x2="11" y2="7" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          <line x1="5" y1="9.5" x2="8.5" y2="9.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+        </svg>
+        Guide
+      </button>
+
       {/* ── Export menu ───────────────────────────────────────────────── */}
       {/* Wrap handlers to match ExportMenu's void-return contract */}
       <ExportMenu
@@ -133,5 +152,8 @@ export function Header() {
         />
       </div>
     </header>
+
+    <MethodologyModal open={methodOpen} onClose={() => setMethodOpen(false)} />
+    </>
   );
 }

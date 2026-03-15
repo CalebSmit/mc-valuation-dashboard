@@ -55,16 +55,8 @@ export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportC
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        aria-expanded={open}
         aria-haspopup="menu"
-        className="text-12 px-3 py-2 rounded flex items-center gap-1"
-        style={{
-          background: 'var(--color-surface-alt)',
-          border: '1px solid var(--color-border)',
-          color: 'var(--color-text-muted)',
-          fontFamily: 'Space Grotesk',
-          cursor: 'pointer',
-        }}
+        className="export-menu-trigger text-12 px-3 py-2 rounded flex items-center gap-1"
       >
         {loading ? '…' : '↓'} Export
       </button>
@@ -72,13 +64,7 @@ export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportC
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 rounded z-50"
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            minWidth: '180px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-          }}
+          className="export-menu-panel absolute right-0 mt-1 rounded z-50"
         >
           {[
             { label: '📄 Export PDF', action: handlePDF, disabled: !hasResults || !onExportPDF },
@@ -91,46 +77,36 @@ export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportC
               role="menuitem"
               onClick={item.action}
               disabled={item.disabled}
-              className="w-full text-left text-12 px-3 py-2"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: item.disabled ? 'var(--color-text-faint)' : 'var(--color-text)',
-                fontFamily: 'Space Grotesk',
-                cursor: item.disabled ? 'not-allowed' : 'pointer',
-                display: 'block',
-              }}
-              onMouseEnter={e => { if (!item.disabled) (e.target as HTMLElement).style.background = 'var(--color-surface-alt)'; }}
-              onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
+              className={`export-menu-item w-full text-left text-12 px-3 py-2 ${item.disabled ? 'export-menu-item-disabled' : ''}`}
             >
               {item.label}
             </button>
           ))}
 
-          <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
+          <div className="export-menu-divider" />
 
-          <label
-            className="w-full text-left text-12 px-3 py-2 block"
-            style={{
-              color: onImportConfig ? 'var(--color-text)' : 'var(--color-text-faint)',
-              fontFamily: 'Space Grotesk',
-              cursor: onImportConfig ? 'pointer' : 'not-allowed',
-            }}
-            onMouseEnter={e => { if (onImportConfig) (e.target as HTMLElement).style.background = 'var(--color-surface-alt)'; }}
-            onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!onImportConfig}
+            className={`export-menu-item w-full text-left text-12 px-3 py-2 ${!onImportConfig ? 'export-menu-item-disabled' : ''}`}
           >
             📂 Load Config (JSON)
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              className="sr-only"
-              onChange={handleImport}
-              disabled={!onImportConfig}
-            />
-          </label>
+          </button>
         </div>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        className="sr-only"
+        onChange={handleImport}
+        disabled={!onImportConfig}
+        aria-label="Load configuration JSON file"
+        title="Load configuration JSON file"
+      />
     </div>
   );
 }

@@ -92,7 +92,7 @@ export function StressVariableRow({ variable }: StressVariableRowProps) {
         <span
           className={`stress-variable-status text-11 flex-shrink-0 w-10 text-right uppercase ${variable.enabled ? 'stress-variable-status-active' : 'stress-variable-status-fixed'}`}
         >
-          {variable.enabled ? 'On' : 'Fixed'}
+          {variable.enabled ? 'Varies' : 'Held'}
         </span>
       </div>
 

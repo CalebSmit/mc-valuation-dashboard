@@ -36,24 +36,25 @@ export function StatsPanel() {
   // Fat tail warning: P95/P5 > 5× is concerning
   const fatTail = !isNaN(output.tailRatio) && output.tailRatio > 5;
 
-  const rows: { label: string; value: string; accent?: boolean; variant?: 'bear' | 'base' | 'bull' | 'normal'; tooltip?: string }[] = [
-    { label: STAT_LABELS.mean,    value: formatPrice(output.mean),   accent: true },
-    { label: STAT_LABELS.median,  value: formatPrice(output.median), accent: true },
+  const rows: { label: string; value: string; accent?: boolean; hero?: boolean; variant?: 'bear' | 'base' | 'bull' | 'normal'; tooltip?: string; header?: string }[] = [
+    { label: '', value: '', header: 'KEY RESULTS' },
+    { label: STAT_LABELS.mean,    value: formatPrice(output.mean),   accent: true, hero: true },
+    { label: STAT_LABELS.median,  value: formatPrice(output.median), accent: true, hero: true },
     { label: STAT_LABELS.stdDev,  value: formatPrice(output.stdDev) },
     { label: STAT_LABELS.min,     value: formatPrice(output.min) },
     { label: STAT_LABELS.max,     value: formatPrice(output.max) },
-    { label: '', value: '', accent: false }, // divider
+    { label: '', value: '', header: 'PERCENTILES' },
     { label: STAT_LABELS.p5,   value: formatPrice(output.percentiles[5]) },
     { label: STAT_LABELS.p10,  value: formatPrice(output.percentiles[10]) },
     { label: STAT_LABELS.p25,  value: formatPrice(output.percentiles[25]) },
     { label: STAT_LABELS.p75,  value: formatPrice(output.percentiles[75]) },
     { label: STAT_LABELS.p90,  value: formatPrice(output.percentiles[90]) },
     { label: STAT_LABELS.p95,  value: formatPrice(output.percentiles[95]) },
-    { label: '', value: '', accent: false }, // divider
+    { label: '', value: '', header: 'SCENARIO PROBABILITIES' },
     { label: STAT_LABELS.probAboveBear, value: formatProbability(output.probAboveBear), variant: 'bear' },
     { label: STAT_LABELS.probAboveBase, value: formatProbability(output.probAboveBase), variant: 'base' },
     { label: STAT_LABELS.probAboveBull, value: formatProbability(output.probAboveBull), variant: 'bull' },
-    { label: '', value: '', accent: false }, // divider
+    { label: '', value: '', header: 'RISK METRICS' },
     {
       label: STAT_LABELS.var95,
       value: `−${formatPrice(Math.max(0, var95Loss))}`,
@@ -107,7 +108,7 @@ export function StatsPanel() {
         {/* High discard rate warning */}
         {highDiscardRate && (
           <div className="ui-banner-red mt-1.5 px-2 py-1 rounded text-11">
-            {(discardRate * 100).toFixed(0)}% of runs discarded — WACC and TGR distributions overlap significantly. Widen the WACC−TGR spread.
+            {(discardRate * 100).toFixed(0)}% of runs discarded — the discount rate (WACC) was too close to the growth rate (TGR). Try increasing WACC or decreasing TGR.
           </div>
         )}
       </div>
@@ -116,6 +117,15 @@ export function StatsPanel() {
       <table className="ui-table-collapse w-full text-12">
         <tbody>
           {rows.map((row, i) => {
+            if (row.header) {
+              return (
+                <tr key={`hdr-${i}`}>
+                  <td colSpan={2} className="stats-group-header px-3 pt-3 pb-1 text-10 uppercase tracking-wider">
+                    {row.header}
+                  </td>
+                </tr>
+              );
+            }
             if (!row.label) {
               return <tr key={i}><td colSpan={2} className="stats-divider-row" /></tr>;
             }
@@ -132,7 +142,7 @@ export function StatsPanel() {
                   </span>
                 </td>
                 <td
-                  className={`px-3 py-1.5 text-right ui-font-mono ${row.variant ? variantColor(row.variant) : (row.accent ? 'stats-value-accent' : 'stats-value-normal')}`}
+                  className={`px-3 py-1.5 text-right ui-font-mono ${row.hero ? 'text-13' : ''} ${row.variant ? variantColor(row.variant) : (row.accent ? 'stats-value-accent' : 'stats-value-normal')}`}
                 >
                   {row.value}
                 </td>
@@ -160,7 +170,7 @@ export function StatsPanel() {
       {/* Fat-tail warning */}
       {fatTail && (
         <div className="ui-banner-amber mx-3 mb-2 px-2 py-1.5 rounded text-11">
-          Wide tail detected (P95/P5 = {formatMultiple(output.tailRatio)}) — high growth and exit multiple may be compounding. Consider narrowing the exit multiple range.
+          Results have a very wide spread (P95/P5 = {formatMultiple(output.tailRatio)}) — the upside and downside scenarios are far apart. Consider narrowing the ranges on your stress variables.
         </div>
       )}
 

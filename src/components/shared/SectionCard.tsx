@@ -4,41 +4,40 @@ import { useState, type ReactNode } from 'react';
 
 interface SectionCardProps {
   title: string;
+  subtitle?: string;
   children: ReactNode;
   defaultOpen?: boolean;
   /** If true, not collapsible */
   alwaysOpen?: boolean;
 }
 
-export function SectionCard({ title, children, defaultOpen = true, alwaysOpen = false }: SectionCardProps) {
+export function SectionCard({ title, subtitle, children, defaultOpen = true, alwaysOpen = false }: SectionCardProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   const open = alwaysOpen || isOpen;
 
   return (
     <div
-      className="mc-card mb-3"
-      style={{ borderLeft: `2px solid ${open ? 'var(--color-primary)' : 'var(--color-border)'}` }}
+      className={`mc-card section-card mb-3 ${open ? 'section-card-open' : 'section-card-closed'}`}
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-3 py-2"
-        style={{ borderBottom: open ? '1px solid var(--color-border)' : 'none' }}
+        className={`section-card-header flex items-center justify-between px-3 py-2 ${open ? 'section-card-header-open' : ''}`}
       >
         <h2
-          className="text-12 font-semibold tracking-wide uppercase"
-          style={{ color: open ? 'var(--color-primary)' : 'var(--color-text-muted)', fontFamily: 'Space Grotesk', letterSpacing: '0.08em' }}
+          className={`section-card-title text-12 font-semibold tracking-wide uppercase ${open ? 'section-card-title-open' : 'section-card-title-closed'}`}
         >
           {title}
         </h2>
+        {subtitle && open && (
+          <span className="section-card-subtitle text-11 ml-auto mr-2">{subtitle}</span>
+        )}
         {!alwaysOpen && (
           <button
             type="button"
             onClick={() => setIsOpen(v => !v)}
-            aria-expanded={open}
             aria-label={open ? 'Collapse section' : 'Expand section'}
-            className="text-12 w-5 h-5 flex items-center justify-center rounded"
-            style={{ color: 'var(--color-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            className="section-card-toggle text-12 w-5 h-5 flex items-center justify-center rounded"
           >
             {open ? '▲' : '▼'}
           </button>

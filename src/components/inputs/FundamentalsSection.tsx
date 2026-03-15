@@ -4,7 +4,7 @@ import { useScenarioStore } from '../../store/scenarioSlice';
 import { SectionCard } from '../shared/SectionCard';
 import { InputField } from '../shared/InputField';
 import { TooltipIcon } from '../shared/TooltipIcon';
-import { SECTION_TITLES, FIELD_LABELS, FIELD_UNITS, TOOLTIPS } from '../../constants/labels';
+import { SECTION_TITLES, SECTION_SUBTITLES, FIELD_LABELS, FIELD_UNITS, TOOLTIPS } from '../../constants/labels';
 import { formatLargeNumber } from '../../utils/formatters';
 import type { SimulationInputs, ProjectionMode } from '../../types/inputs';
 
@@ -62,7 +62,7 @@ export function FundamentalsSection() {
   const impliedMarketCap = inputs.currentPrice * inputs.sharesOutstanding;
 
   return (
-    <SectionCard title={SECTION_TITLES.fundamentals}>
+    <SectionCard title={SECTION_TITLES.fundamentals} subtitle={SECTION_SUBTITLES.fundamentals}>
       {/* Text fields */}
       <div className="grid grid-cols-2 gap-x-3">
         <InputField

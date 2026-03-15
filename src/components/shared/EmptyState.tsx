@@ -9,12 +9,9 @@ export function EmptyState({ onRun, error }: EmptyStateProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
-        <div
-          className="rounded p-4 text-center max-w-md"
-          style={{ background: 'rgba(248,81,73,0.08)', border: '1px solid var(--color-error)' }}
-        >
-          <div className="text-16 mb-2" style={{ color: 'var(--color-error)' }}>⚠ Simulation Error</div>
-          <div className="text-13" style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}>
+        <div className="empty-state-error-box rounded p-4 text-center max-w-md">
+          <div className="empty-state-error-title text-16 mb-2">⚠ Simulation Error</div>
+          <div className="empty-state-error-message text-13">
             {error}
           </div>
         </div>
@@ -22,15 +19,7 @@ export function EmptyState({ onRun, error }: EmptyStateProps) {
           <button
             type="button"
             onClick={onRun}
-            className="text-13 px-4 py-2 rounded"
-            style={{
-              background: 'var(--color-primary)',
-              color: 'var(--color-bg)',
-              border: 'none',
-              fontFamily: 'Space Grotesk',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
+            className="empty-state-button text-13 px-4 py-2 rounded"
           >
             Retry
           </button>
@@ -55,31 +44,25 @@ export function EmptyState({ onRun, error }: EmptyStateProps) {
         <line x1="90" y1="4" x2="90" y2="76" stroke="rgba(63,185,80,0.4)" strokeWidth="1" strokeDasharray="3,3"/>
       </svg>
 
-      <div className="text-center">
-        <div
-          className="text-16 mb-2"
-          style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk', fontWeight: 500 }}
-        >
-          Run simulation to see results
+      <div className="text-center max-w-md">
+        <div className="empty-state-title text-16 mb-2">
+          Monte Carlo Equity Valuation
         </div>
-        <div className="text-13" style={{ color: 'var(--color-text-faint)', fontFamily: 'Space Grotesk' }}>
-          Configure inputs on the left, then click Run Simulation.
+        <div className="empty-state-subtitle text-12 mb-3">
+          Estimate what a stock might be worth by running thousands of scenarios with different assumptions.
         </div>
+        <ol className="empty-state-steps text-left text-12 list-decimal pl-5 space-y-1">
+          <li>Enter a <strong className="ui-text-default">stock price</strong> and <strong className="ui-text-default">shares outstanding</strong> in Company Fundamentals</li>
+          <li>Leave the other sections at their defaults — they're pre-calibrated</li>
+          <li>Click <strong className="ui-text-primary">Run Simulation</strong> and read the histogram</li>
+        </ol>
       </div>
 
       {onRun && (
         <button
           type="button"
           onClick={onRun}
-          className="px-5 py-2 rounded text-13"
-          style={{
-            background: 'var(--color-primary)',
-            color: 'var(--color-bg)',
-            border: 'none',
-            fontFamily: 'Space Grotesk',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className="empty-state-button px-5 py-2 rounded text-13"
         >
           ▶ Run Simulation
         </button>

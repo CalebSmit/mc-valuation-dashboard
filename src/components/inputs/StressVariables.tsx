@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useInputsStore } from '../../store/inputsSlice';
 import { SectionCard } from '../shared/SectionCard';
 import { StressVariableRow } from './StressVariableRow';
-import { SECTION_TITLES, STRESS_GROUP_LABELS } from '../../constants/labels';
+import { SECTION_TITLES, SECTION_SUBTITLES, STRESS_GROUP_LABELS } from '../../constants/labels';
 
 // ─── StressVariables ──────────────────────────────────────────────────────────
 
@@ -21,7 +21,10 @@ export function StressVariables() {
   const activeCashFlowCount = cashFlowVars.filter(v => v.enabled).length;
 
   return (
-    <SectionCard title={SECTION_TITLES.stressVars}>
+    <SectionCard title={SECTION_TITLES.stressVars} subtitle={SECTION_SUBTITLES.stressVars}>
+      <p className="section-intro-text text-11 mb-3">
+        Each variable below is randomized across simulation runs. Defaults are calibrated for typical US equities.
+      </p>
       {/* Group A: Income Statement Drivers — only in margin mode */}
       {projectionMode === 'margin' && (
         <>

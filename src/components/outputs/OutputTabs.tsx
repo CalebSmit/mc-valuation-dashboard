@@ -6,7 +6,7 @@ import { TornadoChart } from './TornadoChart';
 import { CDFChart } from './CDFChart';
 import { SensitivityHeatmap } from './SensitivityHeatmap';
 import { FanChart } from './FanChart';
-import { TAB_LABELS } from '../../constants/labels';
+import { TAB_LABELS, TAB_DESCRIPTIONS } from '../../constants/labels';
 
 // ─── OutputTabs ───────────────────────────────────────────────────────────────
 // Five-tab output area (Histogram | Tornado | CDF | Sensitivity | Fan)
@@ -103,6 +103,11 @@ export function OutputTabs() {
             </button>
           );
         })}
+      </div>
+
+      {/* ── Tab description ───────────────────────────────────────────────── */}
+      <div className="output-tab-description text-11 px-4 py-1">
+        {TAB_DESCRIPTIONS[activeTab]}
       </div>
 
       {/* ── Content Area: Chart + StatsPanel sidebar ────────────────────── */}

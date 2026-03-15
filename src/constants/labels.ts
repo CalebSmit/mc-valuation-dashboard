@@ -9,6 +9,13 @@ export const SECTION_TITLES = {
   scenario: '04 — Scenario Price Targets',
 } as const;
 
+export const SECTION_SUBTITLES = {
+  fundamentals: 'Required — enter your company\'s key financial data',
+  stressVars: 'Optional — defaults work for a first run',
+  simConfig: 'Optional — controls how the simulation runs',
+  scenario: 'Optional — set price targets to shade the histogram',
+} as const;
+
 export const STRESS_GROUP_LABELS = {
   incomeStatement: 'Income Statement Drivers',
   valuation: 'Valuation & Cost of Capital',
@@ -17,8 +24,8 @@ export const STRESS_GROUP_LABELS = {
 
 // ─── Field Labels ─────────────────────────────────────────────────────────────
 export const FIELD_LABELS = {
-  companyName: 'Company Name',
-  ticker: 'Ticker Symbol',
+  companyName: 'Company Name (optional)',
+  ticker: 'Ticker (optional)',
   currentPrice: 'Current Stock Price',
   sharesOutstanding: 'Shares Outstanding',
   totalDebt: 'Total Debt',
@@ -105,8 +112,8 @@ export const STAT_LABELS = {
   probAboveBear: 'P(Price > Bear)',
   probAboveBase: 'P(Price > Base)',
   probAboveBull: 'P(Price > Bull)',
-  var95: 'VaR 95% (loss from current)',
-  cvar95: 'CVaR 95% (exp. shortfall)',
+  var95: 'VaR 95% (worst likely loss)',
+  cvar95: 'CVaR 95% (avg worst-case loss)',
   impliedEvEbitda: 'Implied EV/EBITDA',
 } as const;
 
@@ -146,9 +153,17 @@ export const STATUS = {
 export const TAB_LABELS = {
   histogram: 'Histogram',
   tornado: 'Tornado',
-  cdf: 'CDF',
+  cdf: 'CDF (Cumulative)',
   sensitivity: 'Sensitivity',
   fan: 'Fan Chart',
+} as const;
+
+export const TAB_DESCRIPTIONS = {
+  histogram: 'Distribution of simulated share prices',
+  tornado: 'Which inputs move the price the most',
+  cdf: 'Probability of price being above or below any value',
+  sensitivity: 'How WACC and growth rate affect fair value',
+  fan: 'Spread of possible price paths over time',
 } as const;
 
 // ─── Chart Titles ─────────────────────────────────────────────────────────────

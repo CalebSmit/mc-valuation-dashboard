@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback } from 'react';
 import { useResultsStore } from '../../store/resultsSlice';
+import { useSimulation } from '../../hooks/useSimulation';
 import { StatsPanel } from './StatsPanel';
 import { HistogramChart } from './HistogramChart';
 import { TornadoChart } from './TornadoChart';
 import { CDFChart } from './CDFChart';
 import { SensitivityHeatmap } from './SensitivityHeatmap';
 import { FanChart } from './FanChart';
+import { EmptyState } from '../shared/EmptyState';
 import { TAB_LABELS, TAB_DESCRIPTIONS } from '../../constants/labels';
 
 // ─── OutputTabs ───────────────────────────────────────────────────────────────
@@ -26,6 +28,7 @@ const TABS: { key: TabKey; label: string; badge?: string }[] = [
 export function OutputTabs() {
   const [activeTab, setActiveTab] = useState<TabKey>('histogram');
   const output = useResultsStore(s => s.output);
+  const { runSimulation } = useSimulation();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
@@ -120,11 +123,17 @@ export function OutputTabs() {
           aria-labelledby={`tab-${activeTab}`}
           tabIndex={0}
         >
-          {activeTab === 'histogram'   && <HistogramChart />}
-          {activeTab === 'tornado'     && <TornadoChart />}
-          {activeTab === 'cdf'         && <CDFChart />}
-          {activeTab === 'sensitivity' && <SensitivityHeatmap />}
-          {activeTab === 'fan'         && <FanChart />}
+          {!output ? (
+            <EmptyState onRun={runSimulation} />
+          ) : (
+            <>
+              {activeTab === 'histogram'   && <HistogramChart />}
+              {activeTab === 'tornado'     && <TornadoChart />}
+              {activeTab === 'cdf'         && <CDFChart />}
+              {activeTab === 'sensitivity' && <SensitivityHeatmap />}
+              {activeTab === 'fan'         && <FanChart />}
+            </>
+          )}
         </div>
 
         {/* Stats sidebar — always visible on right; role=status for live updates */}

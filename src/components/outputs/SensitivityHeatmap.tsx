@@ -8,7 +8,15 @@ import { formatPrice, formatPercent } from '../../utils/formatters';
 export function SensitivityHeatmap() {
   const { cells, rowValues, colValues } = useSensitivityData();
 
-  if (cells.length === 0) return null;
+  if (cells.length === 0 || rowValues.length === 0 || colValues.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="ui-text-muted ui-font-space text-12">
+          Sensitivity data unavailable. Run a simulation to populate this view.
+        </div>
+      </div>
+    );
+  }
 
   // Find min/max prices for gradient scaling
   const allPrices = cells.flat().map(c => c.price).filter(p => !isNaN(p));

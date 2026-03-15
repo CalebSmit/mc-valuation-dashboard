@@ -10,7 +10,7 @@ interface ExportMenuProps {
   onExportCSV?: () => void;
   onExportConfig?: () => void;
   onImportConfig?: (file: File) => Promise<void>;
-  onCopySnapshot?: () => Promise<void>;
+  onCopySnapshot?: () => void;
 }
 
 export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportConfig, onCopySnapshot }: ExportMenuProps) {
@@ -44,10 +44,10 @@ export function ExportMenu({ onExportPDF, onExportCSV, onExportConfig, onImportC
     onExportConfig?.(); setOpen(false);
   };
 
-  const handleSnapshot = async () => {
+  const handleSnapshot = () => {
     if (!onCopySnapshot || !hasResults) return;
-    setLoading(true); setOpen(false);
-    try { await onCopySnapshot(); } finally { setLoading(false); }
+    onCopySnapshot();
+    setOpen(false);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {

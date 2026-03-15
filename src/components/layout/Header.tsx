@@ -7,6 +7,7 @@ import { ExportMenu } from '../shared/ExportMenu';
 import { RunButton } from '../shared/RunButton';
 import { MethodologyModal } from '../shared/MethodologyModal';
 import { GuidedSetupWizard } from '../shared/GuidedSetupWizard';
+import { SnapshotPreviewModal } from '../shared/SnapshotPreviewModal';
 import { formatLargeNumber, formatPrice } from '../../utils/formatters';
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -17,9 +18,10 @@ export function Header() {
   const { isRunning, progress, runSimulation, abort } = useSimulation();
   const output = useResultsStore(s => s.output);
   const elapsedMs = useResultsStore(s => s.elapsedMs);
-  const { exportPDF, exportCSV, exportConfig, importConfig, copySnapshot } = useExport();
+  const { exportPDF, exportCSV, exportConfig, importConfig } = useExport();
   const [methodOpen, setMethodOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(true);
+  const [snapshotOpen, setSnapshotOpen] = useState(false);
 
   const impliedMarketCap =
     inputs.currentPrice > 0 && inputs.sharesOutstanding > 0
@@ -154,12 +156,7 @@ export function Header() {
         onExportCSV={() => { exportCSV(); }}
         onExportConfig={() => { exportConfig(); }}
         onImportConfig={async (file) => { await importConfig(file); }}
-        onCopySnapshot={async () => {
-          // Find the active tab by checking which tabpanel is rendered
-          const tabs = ['histogram', 'tornado', 'cdf', 'sensitivity', 'fan'];
-          const activeTab = tabs.find(t => document.getElementById(`tabpanel-${t}`)) ?? 'histogram';
-          await copySnapshot(activeTab);
-        }}
+        onCopySnapshot={() => { setSnapshotOpen(true); }}
       />
 
       {/* ── Run button (compact) ──────────────────────────────────────── */}
@@ -175,6 +172,15 @@ export function Header() {
 
     <MethodologyModal open={methodOpen} onClose={() => setMethodOpen(false)} />
     <GuidedSetupWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+    <SnapshotPreviewModal
+      open={snapshotOpen}
+      onClose={() => setSnapshotOpen(false)}
+      activeTab={
+        ['histogram', 'tornado', 'cdf', 'sensitivity', 'fan'].find(
+          t => document.getElementById(`tabpanel-${t}`),
+        ) ?? 'histogram'
+      }
+    />
     </>
   );
 }

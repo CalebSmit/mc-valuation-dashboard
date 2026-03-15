@@ -10,12 +10,15 @@ import type { SimulationResult } from '../types/outputs';
 // Provides four export actions wired to current store state.
 // All are async and return a boolean indicating success.
 
+export type SnapshotTheme = 'light' | 'dark';
+
 export interface ExportHook {
   exportPDF: () => Promise<boolean>;
   exportCSV: () => boolean;
   exportConfig: () => boolean;
   importConfig: (file: File) => Promise<{ ok: boolean; error?: string }>;
-  copySnapshot: (activeTab: string) => Promise<boolean>;
+  renderSnapshot: (activeTab: string, theme: SnapshotTheme) => Promise<string | null>;
+  copySnapshotToClipboard: (dataUrl: string) => Promise<boolean>;
 }
 
 // Config snapshot shape saved/loaded via JSON
@@ -280,55 +283,58 @@ export function useExport(): ExportHook {
     }
   }, [loadInputs, loadStressVars, loadConfig, setScenario]);
 
-  // ── copySnapshot ─────────────────────────────────────────────────────────
-  // Captures the active chart tab and composes a clean image with header + stats,
-  // then copies it to the clipboard as a PNG for pasting into reports.
-  const copySnapshot = useCallback(async (activeTab: string): Promise<boolean> => {
-    if (!output) return false;
+  // ── renderSnapshot ───────────────────────────────────────────────────────
+  // Renders the active chart tab into a composited PNG data URL with header + stats card.
+  // Supports light (for white-background reports) and dark themes.
+  const renderSnapshot = useCallback(async (activeTab: string, theme: SnapshotTheme): Promise<string | null> => {
+    if (!output) return null;
 
     try {
       const { default: html2canvas } = await import('html2canvas');
 
-      // Capture the chart panel
+      // Theme color palettes
+      const t = theme === 'light'
+        ? { bg: '#ffffff', cardBg: '#f6f8fa', border: '#d1d9e0', text: '#1f2328', muted: '#656d76', faint: '#8b949e', header: '#b35900', accent: '#9a6700', bear: '#cf222e', base: '#656d76', bull: '#1a7f37', priceText: '#1f2328', probText: '#656d76' }
+        : { bg: '#161b22', cardBg: '#1f2937', border: '#30363d', text: '#e6edf3', muted: '#8b949e', faint: '#484f58', header: '#f0b429', accent: '#f0b429', bear: '#f85149', base: '#8b949e', bull: '#3fb950', priceText: '#e6edf3', probText: '#8b949e' };
+
       const chartEl = document.getElementById(`tabpanel-${activeTab}`);
-      if (!chartEl) return false;
+      if (!chartEl) return null;
 
       const chartCanvas = await html2canvas(chartEl, {
-        backgroundColor: '#161b22',
+        backgroundColor: t.bg,
         scale: 2,
         useCORS: true,
         logging: false,
       });
 
-      // Compose final image on offscreen canvas
       const padding = 32;
       const headerH = 52;
       const statsH = 168;
       const totalW = chartCanvas.width + padding * 2;
       const totalH = headerH + chartCanvas.height + statsH + padding * 2;
 
-      const final = document.createElement('canvas');
-      final.width = totalW;
-      final.height = totalH;
-      const fCtx = final.getContext('2d');
-      if (!fCtx) return false;
+      const c = document.createElement('canvas');
+      c.width = totalW;
+      c.height = totalH;
+      const ctx = c.getContext('2d');
+      if (!ctx) return null;
 
       // Background
-      fCtx.fillStyle = '#161b22';
-      fCtx.fillRect(0, 0, totalW, totalH);
+      ctx.fillStyle = t.bg;
+      ctx.fillRect(0, 0, totalW, totalH);
 
-      // Header: "TICKER — Company Name"
-      fCtx.fillStyle = '#f0b429';
-      fCtx.font = 'bold 28px DM Mono, monospace';
-      const header = inputs.ticker
+      // Header
+      ctx.fillStyle = t.header;
+      ctx.font = 'bold 28px DM Mono, monospace';
+      const headerText = inputs.ticker
         ? `${inputs.ticker} — ${inputs.companyName || 'Analysis'}`
         : inputs.companyName || 'Monte Carlo Analysis';
-      fCtx.fillText(header, padding, padding + 28);
+      ctx.fillText(headerText, padding, padding + 28);
 
       // Chart image
-      fCtx.drawImage(chartCanvas, padding, headerH + padding);
+      ctx.drawImage(chartCanvas, padding, headerH + padding);
 
-      // ── Stats card at bottom ──
+      // ── Stats card ──
       const formatP = (v: number) => `$${v.toFixed(2)}`;
       const formatPct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
@@ -339,125 +345,117 @@ export function useExport(): ExportHook {
       const cardPad = 20;
       const cardR = 8;
 
-      // Draw rounded-rect card background
-      fCtx.fillStyle = '#1f2937';
-      fCtx.strokeStyle = '#30363d';
-      fCtx.lineWidth = 2;
-      fCtx.beginPath();
-      fCtx.moveTo(cardX + cardR, cardY);
-      fCtx.lineTo(cardX + cardW - cardR, cardY);
-      fCtx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + cardR, cardR);
-      fCtx.lineTo(cardX + cardW, cardY + cardH - cardR);
-      fCtx.arcTo(cardX + cardW, cardY + cardH, cardX + cardW - cardR, cardY + cardH, cardR);
-      fCtx.lineTo(cardX + cardR, cardY + cardH);
-      fCtx.arcTo(cardX, cardY + cardH, cardX, cardY + cardH - cardR, cardR);
-      fCtx.lineTo(cardX, cardY + cardR);
-      fCtx.arcTo(cardX, cardY, cardX + cardR, cardY, cardR);
-      fCtx.closePath();
-      fCtx.fill();
-      fCtx.stroke();
+      // Rounded-rect card
+      ctx.fillStyle = t.cardBg;
+      ctx.strokeStyle = t.border;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cardX + cardR, cardY);
+      ctx.lineTo(cardX + cardW - cardR, cardY);
+      ctx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + cardR, cardR);
+      ctx.lineTo(cardX + cardW, cardY + cardH - cardR);
+      ctx.arcTo(cardX + cardW, cardY + cardH, cardX + cardW - cardR, cardY + cardH, cardR);
+      ctx.lineTo(cardX + cardR, cardY + cardH);
+      ctx.arcTo(cardX, cardY + cardH, cardX, cardY + cardH - cardR, cardR);
+      ctx.lineTo(cardX, cardY + cardR);
+      ctx.arcTo(cardX, cardY, cardX + cardR, cardY, cardR);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
 
       const colMid = cardX + cardW * 0.42;
       const leftX = cardX + cardPad;
       const rightX = colMid + cardPad;
 
-      // ── Left column: Expected Value ──
+      // Left column: Expected Value
       let ly = cardY + cardPad + 16;
-      fCtx.fillStyle = '#484f58';
-      fCtx.font = 'bold 14px DM Mono, monospace';
-      fCtx.fillText('EXPECTED VALUE', leftX, ly);
+      ctx.fillStyle = t.faint;
+      ctx.font = 'bold 14px DM Mono, monospace';
+      ctx.fillText('EXPECTED VALUE', leftX, ly);
       ly += 32;
 
-      // Mean
-      fCtx.fillStyle = '#8b949e';
-      fCtx.font = '16px DM Mono, monospace';
-      fCtx.fillText('Mean', leftX, ly);
-      fCtx.fillStyle = '#f0b429';
-      fCtx.font = 'bold 22px DM Mono, monospace';
-      fCtx.fillText(formatP(output.mean), leftX + 120, ly);
+      ctx.fillStyle = t.muted;
+      ctx.font = '16px DM Mono, monospace';
+      ctx.fillText('Mean', leftX, ly);
+      ctx.fillStyle = t.accent;
+      ctx.font = 'bold 22px DM Mono, monospace';
+      ctx.fillText(formatP(output.mean), leftX + 120, ly);
       ly += 30;
 
-      // Median
-      fCtx.fillStyle = '#8b949e';
-      fCtx.font = '16px DM Mono, monospace';
-      fCtx.fillText('Median', leftX, ly);
-      fCtx.fillStyle = '#f0b429';
-      fCtx.font = 'bold 22px DM Mono, monospace';
-      fCtx.fillText(formatP(output.median), leftX + 120, ly);
+      ctx.fillStyle = t.muted;
+      ctx.font = '16px DM Mono, monospace';
+      ctx.fillText('Median', leftX, ly);
+      ctx.fillStyle = t.accent;
+      ctx.font = 'bold 22px DM Mono, monospace';
+      ctx.fillText(formatP(output.median), leftX + 120, ly);
 
-      // ── Vertical divider ──
-      fCtx.beginPath();
-      fCtx.strokeStyle = '#30363d';
-      fCtx.lineWidth = 1;
-      fCtx.moveTo(colMid, cardY + cardPad);
-      fCtx.lineTo(colMid, cardY + cardH - cardPad);
-      fCtx.stroke();
+      // Vertical divider
+      ctx.beginPath();
+      ctx.strokeStyle = t.border;
+      ctx.lineWidth = 1;
+      ctx.moveTo(colMid, cardY + cardPad);
+      ctx.lineTo(colMid, cardY + cardH - cardPad);
+      ctx.stroke();
 
-      // ── Right column: Scenario Targets ──
+      // Right column: Scenario Targets
       let ry = cardY + cardPad + 16;
-      fCtx.fillStyle = '#484f58';
-      fCtx.font = 'bold 14px DM Mono, monospace';
-      fCtx.fillText('SCENARIO TARGETS', rightX, ry);
+      ctx.fillStyle = t.faint;
+      ctx.font = 'bold 14px DM Mono, monospace';
+      ctx.fillText('SCENARIO TARGETS', rightX, ry);
       ry += 28;
 
       const scenarios = [
-        { label: 'Bear', price: scenario.bear, prob: output.probAboveBear, color: '#f85149' },
-        { label: 'Base', price: scenario.base, prob: output.probAboveBase, color: '#8b949e' },
-        { label: 'Bull', price: scenario.bull, prob: output.probAboveBull, color: '#3fb950' },
+        { label: 'Bear', price: scenario.bear, prob: output.probAboveBear, color: t.bear },
+        { label: 'Base', price: scenario.base, prob: output.probAboveBase, color: t.base },
+        { label: 'Bull', price: scenario.bull, prob: output.probAboveBull, color: t.bull },
       ];
 
       for (const s of scenarios) {
-        // Colored dot
-        fCtx.beginPath();
-        fCtx.fillStyle = s.color;
-        fCtx.arc(rightX + 6, ry - 5, 5, 0, Math.PI * 2);
-        fCtx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = s.color;
+        ctx.arc(rightX + 6, ry - 5, 5, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Label
-        fCtx.fillStyle = s.color;
-        fCtx.font = 'bold 16px DM Mono, monospace';
-        fCtx.fillText(s.label, rightX + 20, ry);
+        ctx.fillStyle = s.color;
+        ctx.font = 'bold 16px DM Mono, monospace';
+        ctx.fillText(s.label, rightX + 20, ry);
 
-        // Price
-        fCtx.fillStyle = '#e6edf3';
-        fCtx.font = '18px DM Mono, monospace';
-        fCtx.fillText(formatP(s.price), rightX + 100, ry);
+        ctx.fillStyle = t.priceText;
+        ctx.font = '18px DM Mono, monospace';
+        ctx.fillText(formatP(s.price), rightX + 100, ry);
 
-        // Prob above
-        fCtx.fillStyle = '#8b949e';
-        fCtx.font = '14px DM Mono, monospace';
-        fCtx.fillText(`Prob. Above: ${formatPct(s.prob)}`, rightX + 260, ry);
+        ctx.fillStyle = t.probText;
+        ctx.font = '14px DM Mono, monospace';
+        ctx.fillText(`Prob. Above: ${formatPct(s.prob)}`, rightX + 260, ry);
 
         ry += 28;
       }
 
-      // Copy to clipboard
-      const blob = await new Promise<Blob | null>(resolve =>
-        final.toBlob(resolve, 'image/png'),
-      );
-      if (!blob) return false;
+      return c.toDataURL('image/png');
+    } catch (err) {
+      console.error('[renderSnapshot]', err);
+      return null;
+    }
+  }, [output, inputs, scenario]);
+
+  // ── copySnapshotToClipboard ─────────────────────────────────────────────
+  // Takes a data URL and copies it to the clipboard as a PNG image.
+  const copySnapshotToClipboard = useCallback(async (dataUrl: string): Promise<boolean> => {
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
 
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob }),
       ]);
       return true;
     } catch (err) {
-      console.error('[copySnapshot]', err);
+      console.error('[copySnapshotToClipboard]', err);
 
-      // Fallback: download the PNG if clipboard write fails
+      // Fallback: download the PNG
       try {
-        const chartEl = document.getElementById(`tabpanel-${activeTab}`);
-        if (!chartEl) return false;
-        const { default: html2canvas } = await import('html2canvas');
-        const canvas = await html2canvas(chartEl, {
-          backgroundColor: '#161b22',
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-        const url = canvas.toDataURL('image/png');
         const a = document.createElement('a');
-        a.href = url;
+        a.href = dataUrl;
         a.download = `mc-snapshot-${inputs.ticker || 'chart'}-${new Date().toISOString().slice(0, 10)}.png`;
         document.body.appendChild(a);
         a.click();
@@ -467,7 +465,7 @@ export function useExport(): ExportHook {
         return false;
       }
     }
-  }, [output, inputs]);
+  }, [inputs.ticker]);
 
-  return { exportPDF, exportCSV, exportConfig, importConfig, copySnapshot };
+  return { exportPDF, exportCSV, exportConfig, importConfig, renderSnapshot, copySnapshotToClipboard };
 }

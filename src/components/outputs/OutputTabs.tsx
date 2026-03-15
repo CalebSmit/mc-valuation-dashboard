@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useResultsStore } from '../../store/resultsSlice';
 import { useSimulation } from '../../hooks/useSimulation';
-import { useExport } from '../../hooks/useExport';
 import { StatsPanel } from './StatsPanel';
 import { HistogramChart } from './HistogramChart';
 import { TornadoChart } from './TornadoChart';
@@ -9,6 +8,7 @@ import { CDFChart } from './CDFChart';
 import { SensitivityHeatmap } from './SensitivityHeatmap';
 import { FanChart } from './FanChart';
 import { EmptyState } from '../shared/EmptyState';
+import { SnapshotPreviewModal } from '../shared/SnapshotPreviewModal';
 import { TAB_LABELS, TAB_DESCRIPTIONS } from '../../constants/labels';
 
 // ─── OutputTabs ───────────────────────────────────────────────────────────────
@@ -28,20 +28,10 @@ const TABS: { key: TabKey; label: string; badge?: string }[] = [
 
 export function OutputTabs() {
   const [activeTab, setActiveTab] = useState<TabKey>('histogram');
-  const [snapshotState, setSnapshotState] = useState<'idle' | 'copying' | 'copied'>('idle');
+  const [snapshotOpen, setSnapshotOpen] = useState(false);
   const output = useResultsStore(s => s.output);
   const { runSimulation } = useSimulation();
-  const { copySnapshot } = useExport();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const handleCopySnapshot = useCallback(async () => {
-    setSnapshotState('copying');
-    const ok = await copySnapshot(activeTab);
-    setSnapshotState(ok ? 'copied' : 'idle');
-    if (ok) {
-      setTimeout(() => setSnapshotState('idle'), 2000);
-    }
-  }, [activeTab, copySnapshot]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     let next = index;
@@ -121,44 +111,23 @@ export function OutputTabs() {
           })}
         </div>
 
-        {/* ── Copy Snapshot button (outside tablist for ARIA compliance) ── */}
+        {/* ── Snapshot button (outside tablist for ARIA compliance) ──── */}
         <div className="flex-1" />
         <button
           type="button"
-          onClick={handleCopySnapshot}
-          disabled={!output || snapshotState === 'copying'}
+          onClick={() => setSnapshotOpen(true)}
+          disabled={!output}
           className={`snapshot-btn flex-shrink-0 whitespace-nowrap px-3 py-2 text-11 rounded flex items-center gap-1.5 transition-colors ${
-            snapshotState === 'copied'
-              ? 'snapshot-btn-copied'
-              : !output
-                ? 'snapshot-btn-disabled'
-                : 'snapshot-btn-idle'
+            !output ? 'snapshot-btn-disabled' : 'snapshot-btn-idle'
           }`}
-          title="Copy chart snapshot to clipboard for reports"
+          title="Preview and copy chart snapshot for reports"
         >
-          {snapshotState === 'copying' ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="animate-spin ui-icon-fixed">
-                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="28" strokeDashoffset="8" fill="none" />
-              </svg>
-              Copying…
-            </>
-          ) : snapshotState === 'copied' ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
-                <path d="M3 8.5 L6.5 12 L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Copied!
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
-                <rect x="5" y="2" width="8" height="10" rx="1" stroke="currentColor" strokeWidth="1.2" fill="none" />
-                <path d="M3 5v8a1 1 0 001 1h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-              </svg>
-              Copy Snapshot
-            </>
-          )}
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
+            <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" fill="none" />
+            <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.2" fill="none" />
+            <rect x="5.5" y="3" width="5" height="2" rx="0.5" stroke="currentColor" strokeWidth="0.8" fill="none" />
+          </svg>
+          Snapshot
         </button>
       </div>
 
@@ -199,6 +168,13 @@ export function OutputTabs() {
           <StatsPanel />
         </div>
       </div>
+
+      {/* ── Snapshot Preview Modal ──────────────────────────────────────── */}
+      <SnapshotPreviewModal
+        open={snapshotOpen}
+        onClose={() => setSnapshotOpen(false)}
+        activeTab={activeTab}
+      />
     </div>
   );
 }

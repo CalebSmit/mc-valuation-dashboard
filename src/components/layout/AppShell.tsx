@@ -39,13 +39,12 @@ export function AppShell() {
 
       {/* ── Main content: sidebar + output area ─────────────────────────── */}
       <div
-        className="flex flex-1 min-h-0"
+        className="app-shell-main flex flex-1 min-h-0 flex-col lg:flex-row"
         style={{ overflow: 'hidden' }}
       >
         {/* Input panel — fixed 320px on lg+, full-width stacked on mobile */}
         <div
-          className="flex-shrink-0 overflow-hidden"
-          style={{ width: '320px' }}
+          className="app-shell-input-panel flex-shrink-0 overflow-hidden"
         >
           <InputPanel />
         </div>

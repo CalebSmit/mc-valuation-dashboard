@@ -38,6 +38,7 @@ const CSV_VARIABLE_COLUMNS: Record<StressVariableId, { header: string; getValue:
   exitMultiple: { header: 'ExitMultiple', getValue: record => record.exitMultiple },
   taxRate: { header: 'TaxRate', getValue: record => record.taxRate },
   year1GrowthPremium: { header: 'Year1GrowthPremium', getValue: record => record.year1GrowthPremium },
+  fcfDeviation: { header: 'FCFDeviation', getValue: record => record.fcfDeviation },
 };
 
 export function useExport(): ExportHook {

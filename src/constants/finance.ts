@@ -20,6 +20,9 @@ export const DEFAULT_INPUTS: SimulationInputs = {
   ttmFcf: 130,              // $130M TTM FCF
   projectionYears: 5,
   terminalValueMethod: 'ggm',
+  projectionMode: 'margin',
+  fcfProjections: [0, 0, 0, 0, 0],  // $M, one per projection year
+  wacc: 0.10,                         // 10% discount rate
 };
 
 // ─── Default Stress Variables (10 variables, 2 groups) ──────────────────────
@@ -145,6 +148,20 @@ export const DEFAULT_STRESS_VARS: StressVariable[] = [
     stdDev: 0.02,     // 2%
     min: -0.05,       // -5%
     max: 0.15,        // 15%
+    distribution: 'normal',
+    mostLikely: null,
+  },
+
+  // ── Group C: Direct FCFF Stress ──
+  {
+    id: 'fcfDeviation',
+    label: 'FCF Deviation',
+    group: 'cashFlow',
+    enabled: true,
+    mean: 0,          // 0% — no systematic bias
+    stdDev: 0.15,     // 15%
+    min: -0.50,       // -50%
+    max: 0.50,        // 50%
     distribution: 'normal',
     mostLikely: null,
   },

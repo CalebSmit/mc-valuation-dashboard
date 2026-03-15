@@ -41,72 +41,62 @@ export function computeDCF(
   if (sampled.wacc <= sampled.tgr) return NaN;
 
   const N = base.projectionYears;
-
-  // Year 1 uses revenueGrowth + year1GrowthPremium; subsequent years use revenueGrowth
-  const growthRates: number[] = [];
-  for (let i = 0; i < N; i++) {
-    growthRates.push(i === 0
-      ? sampled.revenueGrowth + sampled.year1GrowthPremium
-      : sampled.revenueGrowth
-    );
-  }
-
-  let revenue = base.ttmRevenue;
   let pvFcf = 0;
   let lastFcf = 0;
   let lastEbitda = 0;
 
-  for (let year = 1; year <= N; year++) {
-    // Grow revenue
-    revenue = revenue * (1 + growthRates[year - 1]);
+  if (base.projectionMode === 'direct') {
+    // ── Direct FCFF mode: user-entered projections stressed by % deviation ──
+    for (let year = 1; year <= N; year++) {
+      const baseFcf = base.fcfProjections[year - 1] ?? 0;
+      const fcf = baseFcf * (1 + sampled.fcfDeviation);
+      const discountExp = midYearConvention ? year - 0.5 : year;
+      pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
+      if (year === N) { lastFcf = fcf; }
+    }
+    // Terminal EBITDA for exit multiple TV uses TTM EBITDA as proxy
+    lastEbitda = base.ttmEbitda;
+  } else {
+    // ── Margin-based mode: derive FCF from revenue × margin bridge ──
+    const growthRates: number[] = [];
+    for (let i = 0; i < N; i++) {
+      growthRates.push(i === 0
+        ? sampled.revenueGrowth + sampled.year1GrowthPremium
+        : sampled.revenueGrowth
+      );
+    }
 
-    // EBITDA
-    const ebitda = revenue * sampled.ebitdaMargin;
-
-    // EBIT (subtract D&A from EBITDA for tax purposes)
-    const da = revenue * sampled.daPct;
-    const ebit = ebitda - da;
-
-    // NOPAT (tax-effected operating profit)
-    const nopat = ebit * (1 - sampled.taxRate);
-
-    // Unlevered Free Cash Flow
-    const capex = revenue * sampled.capexPct;
-    const nwcChange = revenue * sampled.nwcPct;
-    const fcf = nopat + da - capex - nwcChange;
-
-    // Discount to present value — mid-year convention uses t−0.5 exponent
-    const discountExp = midYearConvention ? year - 0.5 : year;
-    pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
-
-    // Track last year values for terminal value
-    if (year === N) {
-      lastFcf = fcf;
-      lastEbitda = ebitda;
+    let revenue = base.ttmRevenue;
+    for (let year = 1; year <= N; year++) {
+      revenue = revenue * (1 + growthRates[year - 1]);
+      const ebitda = revenue * sampled.ebitdaMargin;
+      const da = revenue * sampled.daPct;
+      const ebit = ebitda - da;
+      const nopat = ebit * (1 - sampled.taxRate);
+      const capex = revenue * sampled.capexPct;
+      const nwcChange = revenue * sampled.nwcPct;
+      const fcf = nopat + da - capex - nwcChange;
+      const discountExp = midYearConvention ? year - 0.5 : year;
+      pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
+      if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
     }
   }
 
   // Terminal Value
   let terminalValue: number;
   if (method === 'ggm') {
-    // Gordon Growth Model: TV = FCF_N × (1 + TGR) / (WACC − TGR)
     terminalValue = lastFcf * (1 + sampled.tgr) / (sampled.wacc - sampled.tgr);
   } else {
-    // Exit Multiple: TV = EBITDA_N × EV/EBITDA multiple
     terminalValue = lastEbitda * sampled.exitMultiple;
   }
 
   // Enterprise Value = PV of explicit FCFs + PV of Terminal Value
-  // Terminal value is always discounted at end-of-period N (convention)
   const ev = pvFcf + terminalValue / Math.pow(1 + sampled.wacc, N);
 
   // Equity Value = EV − Net Debt (Debt − Cash)
   const equity = ev - base.totalDebt + base.cashAndEquiv;
 
-  // Price per share
-  const price = equity / base.sharesOutstanding;
-
-  return price;
+  return equity / base.sharesOutstanding;
 }
 
 /**
@@ -122,31 +112,42 @@ export function computeEV(
   if (sampled.wacc <= sampled.tgr) return NaN;
 
   const N = base.projectionYears;
-  const growthRates: number[] = [];
-  for (let i = 0; i < N; i++) {
-    growthRates.push(i === 0
-      ? sampled.revenueGrowth + sampled.year1GrowthPremium
-      : sampled.revenueGrowth
-    );
-  }
-
-  let revenue = base.ttmRevenue;
   let pvFcf = 0;
   let lastFcf = 0;
   let lastEbitda = 0;
 
-  for (let year = 1; year <= N; year++) {
-    revenue = revenue * (1 + growthRates[year - 1]);
-    const ebitda = revenue * sampled.ebitdaMargin;
-    const da = revenue * sampled.daPct;
-    const ebit = ebitda - da;
-    const nopat = ebit * (1 - sampled.taxRate);
-    const capex = revenue * sampled.capexPct;
-    const nwcChange = revenue * sampled.nwcPct;
-    const fcf = nopat + da - capex - nwcChange;
-    const discountExp = midYearConvention ? year - 0.5 : year;
-    pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
-    if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
+  if (base.projectionMode === 'direct') {
+    for (let year = 1; year <= N; year++) {
+      const baseFcf = base.fcfProjections[year - 1] ?? 0;
+      const fcf = baseFcf * (1 + sampled.fcfDeviation);
+      const discountExp = midYearConvention ? year - 0.5 : year;
+      pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
+      if (year === N) { lastFcf = fcf; }
+    }
+    lastEbitda = base.ttmEbitda;
+  } else {
+    const growthRates: number[] = [];
+    for (let i = 0; i < N; i++) {
+      growthRates.push(i === 0
+        ? sampled.revenueGrowth + sampled.year1GrowthPremium
+        : sampled.revenueGrowth
+      );
+    }
+
+    let revenue = base.ttmRevenue;
+    for (let year = 1; year <= N; year++) {
+      revenue = revenue * (1 + growthRates[year - 1]);
+      const ebitda = revenue * sampled.ebitdaMargin;
+      const da = revenue * sampled.daPct;
+      const ebit = ebitda - da;
+      const nopat = ebit * (1 - sampled.taxRate);
+      const capex = revenue * sampled.capexPct;
+      const nwcChange = revenue * sampled.nwcPct;
+      const fcf = nopat + da - capex - nwcChange;
+      const discountExp = midYearConvention ? year - 0.5 : year;
+      pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
+      if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
+    }
   }
 
   const terminalValue = method === 'ggm'

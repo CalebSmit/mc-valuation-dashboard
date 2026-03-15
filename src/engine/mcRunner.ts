@@ -75,6 +75,7 @@ export function runMonteCarlo(
       exitMultiple:       sampled.exitMultiple,
       taxRate:            sampled.taxRate,
       year1GrowthPremium: sampled.year1GrowthPremium,
+      fcfDeviation:       sampled.fcfDeviation,
       impliedEV:          ev,
       impliedPrice:       price,
     });
@@ -214,6 +215,7 @@ function createMeanSample(stressVars: StressVariable[]): SampledVariables {
     exitMultiple: 0,
     taxRate: 0,
     year1GrowthPremium: 0,
+    fcfDeviation: 0,
   };
 
   for (const variable of stressVars) {
@@ -309,6 +311,7 @@ function assignVariable(sampled: SampledVariables, id: string, value: number): v
     case 'exitMultiple':       sampled.exitMultiple = value; break;
     case 'taxRate':            sampled.taxRate = value; break;
     case 'year1GrowthPremium': sampled.year1GrowthPremium = value; break;
+    case 'fcfDeviation':       sampled.fcfDeviation = value; break;
   }
 }
 
@@ -323,24 +326,37 @@ function computeDCFPrice(
   if (sampled.wacc <= sampled.tgr) return NaN;
 
   const N = inputs.projectionYears;
-  let revenue = inputs.ttmRevenue;
   let pvFcf = 0;
   let lastFcf = 0;
   let lastEbitda = 0;
 
-  for (let year = 1; year <= N; year++) {
-    const growth = year === 1
-      ? sampled.revenueGrowth + sampled.year1GrowthPremium
-      : sampled.revenueGrowth;
-    revenue *= (1 + growth);
-    const ebitda = revenue * sampled.ebitdaMargin;
-    const da = revenue * sampled.daPct;
-    const ebit = ebitda - da;
-    const nopat = ebit * (1 - sampled.taxRate);
-    const fcf = nopat + da - revenue * sampled.capexPct - revenue * sampled.nwcPct;
-    const discountExp = midYearConvention ? year - 0.5 : year;
-    pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
-    if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
+  if (inputs.projectionMode === 'direct') {
+    // ── Direct FCFF mode ──
+    for (let year = 1; year <= N; year++) {
+      const baseFcf = inputs.fcfProjections[year - 1] ?? 0;
+      const fcf = baseFcf * (1 + sampled.fcfDeviation);
+      const discountExp = midYearConvention ? year - 0.5 : year;
+      pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
+      if (year === N) { lastFcf = fcf; }
+    }
+    lastEbitda = inputs.ttmEbitda;
+  } else {
+    // ── Margin-based mode ──
+    let revenue = inputs.ttmRevenue;
+    for (let year = 1; year <= N; year++) {
+      const growth = year === 1
+        ? sampled.revenueGrowth + sampled.year1GrowthPremium
+        : sampled.revenueGrowth;
+      revenue *= (1 + growth);
+      const ebitda = revenue * sampled.ebitdaMargin;
+      const da = revenue * sampled.daPct;
+      const ebit = ebitda - da;
+      const nopat = ebit * (1 - sampled.taxRate);
+      const fcf = nopat + da - revenue * sampled.capexPct - revenue * sampled.nwcPct;
+      const discountExp = midYearConvention ? year - 0.5 : year;
+      pvFcf += fcf / Math.pow(1 + sampled.wacc, discountExp);
+      if (year === N) { lastFcf = fcf; lastEbitda = ebitda; }
+    }
   }
 
   const tv = method === 'ggm'

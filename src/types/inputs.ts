@@ -1,5 +1,7 @@
 // ─── Simulation Inputs ───────────────────────────────────────────────────────
 
+export type ProjectionMode = 'margin' | 'direct';
+
 /** Company fundamentals entered by the user. */
 export interface SimulationInputs {
   companyName: string;
@@ -13,6 +15,9 @@ export interface SimulationInputs {
   ttmFcf: number;            // $M
   projectionYears: 3 | 5 | 7 | 10;
   terminalValueMethod: 'ggm' | 'exitMultiple';
+  projectionMode: ProjectionMode;
+  fcfProjections: number[];  // Year-by-year FCFF in $M, length = projectionYears
+  wacc: number;              // Discount rate (decimal, 0.10 = 10%)
 }
 
 // ─── Stress Variable ────────────────────────────────────────────────────────
@@ -29,9 +34,10 @@ export type StressVariableId =
   | 'tgr'
   | 'exitMultiple'
   | 'taxRate'
-  | 'year1GrowthPremium';
+  | 'year1GrowthPremium'
+  | 'fcfDeviation';
 
-export type StressVariableGroup = 'incomeStatement' | 'valuation';
+export type StressVariableGroup = 'incomeStatement' | 'valuation' | 'cashFlow';
 
 /** One of the 10 configurable uncertainty variables. */
 export interface StressVariable {
@@ -59,6 +65,7 @@ export interface SampledVariables {
   exitMultiple: number;
   taxRate: number;
   year1GrowthPremium: number;
+  fcfDeviation: number;       // % deviation applied to each direct FCF projection
 }
 
 // ─── Scenario Targets ───────────────────────────────────────────────────────

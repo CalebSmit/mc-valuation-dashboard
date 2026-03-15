@@ -47,6 +47,7 @@ export function useSensitivityData(): SensitivityData {
       exitMultiple:       varMap.get('exitMultiple')?.mean  ?? 12.0,
       taxRate:            varMap.get('taxRate')?.mean       ?? 0.25,
       year1GrowthPremium: varMap.get('year1GrowthPremium')?.mean ?? 0.02,
+      fcfDeviation:       varMap.get('fcfDeviation')?.mean ?? 0,
     };
 
     const midYear = config.midYearConvention ?? false;

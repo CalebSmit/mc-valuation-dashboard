@@ -3,9 +3,10 @@ import { useInputsStore } from '../../store/inputsSlice';
 import { useScenarioStore } from '../../store/scenarioSlice';
 import { SectionCard } from '../shared/SectionCard';
 import { InputField } from '../shared/InputField';
+import { TooltipIcon } from '../shared/TooltipIcon';
 import { SECTION_TITLES, FIELD_LABELS, FIELD_UNITS, TOOLTIPS } from '../../constants/labels';
 import { formatLargeNumber } from '../../utils/formatters';
-import type { SimulationInputs } from '../../types/inputs';
+import type { SimulationInputs, ProjectionMode } from '../../types/inputs';
 
 // ─── FundamentalsSection ──────────────────────────────────────────────────────
 
@@ -17,6 +18,9 @@ export function FundamentalsSection() {
   const inputs = useInputsStore(s => s.inputs);
   const setInput = useInputsStore(s => s.setInput);
   const setStressVar = useInputsStore(s => s.setStressVar);
+  const syncWaccToStressVar = useInputsStore(s => s.syncWaccToStressVar);
+  const setFcfProjection = useInputsStore(s => s.setFcfProjection);
+  const setProjectionMode = useInputsStore(s => s.setProjectionMode);
   const deriveFromPrice = useScenarioStore(s => s.deriveFromPrice);
   const [calibrationBanner, setCalibrationBanner] = useState<string | null>(null);
 
@@ -124,16 +128,19 @@ export function FundamentalsSection() {
           onChange={e => num('cashAndEquiv')(e.target.value)}
           step={10}
         />
-        <InputField
-          id="ttmRevenue"
-          label={FIELD_LABELS.ttmRevenue}
-          tooltip={TOOLTIPS.ttmRevenue}
-          type="number"
-          units={FIELD_UNITS.ttmRevenue}
-          value={inputs.ttmRevenue}
-          onChange={e => num('ttmRevenue')(e.target.value)}
-          step={10}
-        />
+        {/* TTM Revenue & TTM FCF — only in margin mode (EBITDA always visible for exit multiple) */}
+        {inputs.projectionMode === 'margin' && (
+          <InputField
+            id="ttmRevenue"
+            label={FIELD_LABELS.ttmRevenue}
+            tooltip={TOOLTIPS.ttmRevenue}
+            type="number"
+            units={FIELD_UNITS.ttmRevenue}
+            value={inputs.ttmRevenue}
+            onChange={e => num('ttmRevenue')(e.target.value)}
+            step={10}
+          />
+        )}
         <InputField
           id="ttmEbitda"
           label={FIELD_LABELS.ttmEbitda}
@@ -144,16 +151,18 @@ export function FundamentalsSection() {
           onChange={e => num('ttmEbitda')(e.target.value)}
           step={10}
         />
-        <InputField
-          id="ttmFcf"
-          label={FIELD_LABELS.ttmFcf}
-          tooltip={TOOLTIPS.ttmFcf}
-          type="number"
-          units={FIELD_UNITS.ttmFcf}
-          value={inputs.ttmFcf}
-          onChange={e => num('ttmFcf')(e.target.value)}
-          step={10}
-        />
+        {inputs.projectionMode === 'margin' && (
+          <InputField
+            id="ttmFcf"
+            label={FIELD_LABELS.ttmFcf}
+            tooltip={TOOLTIPS.ttmFcf}
+            type="number"
+            units={FIELD_UNITS.ttmFcf}
+            value={inputs.ttmFcf}
+            onChange={e => num('ttmFcf')(e.target.value)}
+            step={10}
+          />
+        )}
 
         {/* Projection Years */}
         <div className="mb-3">
@@ -174,6 +183,79 @@ export function FundamentalsSection() {
           </div>
         </div>
       </div>
+
+      {/* ── WACC Input ──────────────────────────────────────────────── */}
+      <div className="ui-border-top mt-1 pt-2">
+        <div className="grid grid-cols-2 gap-x-3">
+          <InputField
+            id="waccInput"
+            label={FIELD_LABELS.waccInput}
+            tooltip={TOOLTIPS.waccTopLevel}
+            type="number"
+            units="%"
+            value={parseFloat((inputs.wacc * 100).toFixed(2))}
+            onChange={e => {
+              const pct = parseFloat(e.target.value);
+              if (!isNaN(pct)) syncWaccToStressVar(pct / 100);
+            }}
+            min={1}
+            max={50}
+            step={0.5}
+          />
+        </div>
+      </div>
+
+      {/* ── Projection Mode Toggle ──────────────────────────────────── */}
+      <div className="ui-border-top mt-1 pt-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-12 ui-text-muted ui-font-space">{FIELD_LABELS.projectionMode}</span>
+          <TooltipIcon text={TOOLTIPS.projectionMode} />
+        </div>
+        <div className="flex gap-1">
+          {([
+            { key: 'margin' as ProjectionMode, label: 'Margin-Based' },
+            { key: 'direct' as ProjectionMode, label: 'Direct FCFF' },
+          ]).map(opt => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setProjectionMode(opt.key)}
+              className={`ui-segment-btn flex-1 py-1.5 rounded text-12 ${inputs.projectionMode === opt.key ? 'ui-segment-btn-active-solid' : 'ui-segment-btn-inactive'}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Direct FCFF Projection Grid ─────────────────────────────── */}
+      {inputs.projectionMode === 'direct' && (
+        <div className="ui-border-top mt-1 pt-2">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-12 ui-text-muted ui-font-space">{FIELD_LABELS.fcfProjections}</span>
+            <TooltipIcon text={TOOLTIPS.fcfProjections} />
+          </div>
+          <div className="grid grid-cols-5 gap-1">
+            {Array.from({ length: inputs.projectionYears }, (_, i) => (
+              <div key={i}>
+                <label className="text-11 ui-text-faint block mb-0.5 text-center">Yr {i + 1}</label>
+                <input
+                  type="number"
+                  className="mc-input text-12 text-center w-full"
+                  aria-label={`Year ${i + 1} FCFF projection ($M)`}
+                  value={inputs.fcfProjections[i] ?? 0}
+                  step={10}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    if (!isNaN(v)) setFcfProjection(i, v);
+                  }}
+                />
+                <span className="text-10 ui-text-faint block text-center">$M</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Implied market cap read-only */}
       <div className="ui-border-top mt-1 pt-2">

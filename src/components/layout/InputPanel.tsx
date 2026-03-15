@@ -17,11 +17,8 @@ export function InputPanel() {
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="input-panel-shell flex flex-col h-full"
       style={{
-        width: '320px',
-        minWidth: '320px',
-        maxWidth: '320px',
         borderRight: '1px solid var(--color-border)',
         background: 'var(--color-surface)',
       }}

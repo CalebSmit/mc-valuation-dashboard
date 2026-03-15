@@ -32,7 +32,7 @@ describe('mcRunner', () => {
 
     // Tornado data should have entries
     expect(output.tornadoData.length).toBeGreaterThan(0);
-    expect(output.activeVariableIds).toHaveLength(10);
+    expect(output.activeVariableIds).toHaveLength(11);
 
     // Results should be sorted ascending
     for (let i = 1; i < output.results.length; i++) {
@@ -59,6 +59,32 @@ describe('mcRunner', () => {
 
     const diff = Math.abs(stdOutput.mean - lhsOutput.mean) / stdOutput.mean;
     expect(diff).toBeLessThan(0.05); // Within 5%
+  });
+
+  it('direct FCFF mode produces valid distribution with fcfDeviation stress', () => {
+    const directInputs = {
+      ...DEFAULT_INPUTS,
+      projectionMode: 'direct' as const,
+      fcfProjections: [100, 110, 120, 130, 140],
+      wacc: 0.10,
+    };
+    // Disable margin-based vars, enable fcfDeviation
+    const directVars = DEFAULT_STRESS_VARS.map(v => {
+      if (['revenueGrowth', 'ebitdaMargin', 'capexPct', 'nwcPct', 'daPct', 'taxRate', 'year1GrowthPremium'].includes(v.id)) {
+        return { ...v, enabled: false };
+      }
+      return v;
+    });
+
+    const config = { ...DEFAULT_CONFIG, numRuns: 500 as const, seed: 77 };
+    const output = runMonteCarlo(directInputs, directVars, DEFAULT_SCENARIO, config);
+
+    expect(output.results.length).toBeGreaterThan(450);
+    expect(output.mean).not.toBeNaN();
+    expect(output.mean).toBeGreaterThan(0);
+    expect(output.stdDev).toBeGreaterThan(0);
+    // fcfDeviation should be in active IDs
+    expect(output.activeVariableIds).toContain('fcfDeviation');
   });
 
   it('keeps disabled variables fixed at their mean and hides them from tornado output', () => {

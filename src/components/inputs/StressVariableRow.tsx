@@ -15,6 +15,7 @@ interface StressVariableRowProps {
 const IS_PERCENTAGE: Record<StressVariableId, boolean> = {
   revenueGrowth: true, ebitdaMargin: true, capexPct: true, nwcPct: true, daPct: true,
   wacc: true, tgr: true, exitMultiple: false, taxRate: true, year1GrowthPremium: true,
+  fcfDeviation: true,
 };
 
 const DIST_TYPES: DistributionType[] = ['normal', 'lognormal', 'uniform', 'triangular'];

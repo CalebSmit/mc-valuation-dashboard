@@ -12,6 +12,7 @@ export const SECTION_TITLES = {
 export const STRESS_GROUP_LABELS = {
   incomeStatement: 'Income Statement Drivers',
   valuation: 'Valuation & Cost of Capital',
+  cashFlow: 'Direct FCFF Stress',
 } as const;
 
 // ─── Field Labels ─────────────────────────────────────────────────────────────
@@ -27,6 +28,9 @@ export const FIELD_LABELS = {
   ttmFcf: 'TTM Free Cash Flow',
   projectionYears: 'Projection Years',
   terminalValueMethod: 'Terminal Value Method',
+  projectionMode: 'Projection Mode',
+  fcfProjections: 'FCFF Projections',
+  waccInput: 'WACC (Discount Rate)',
   numRuns: 'Number of Runs',
   seed: 'Random Seed',
   samplingMethod: 'Sampling Method',
@@ -76,6 +80,10 @@ export const TOOLTIPS = {
   exitMultiple: 'EV/EBITDA exit multiple applied to terminal year EBITDA. Used when Terminal Value Method = Exit Multiple. Typically 8–20× for most sectors.',
   taxRate: 'Effective corporate tax rate (%). Applied to EBIT to compute NOPAT. Must be in [0%, 60%].',
   year1GrowthPremium: 'Additional growth rate applied to Year 1 only, on top of the base Revenue Growth Rate. Useful for companies with near-term catalysts (e.g., new product launch, geographic expansion).',
+  projectionMode: 'Margin-Based derives FCF from revenue × margin − capex − NWC. Direct FCFF lets you enter your own year-by-year free cash flow projections and stresses them with a % deviation.',
+  fcfProjections: 'Year-by-year unlevered Free Cash Flow to the Firm (FCFF) projections in $M. These are your base-case projections — the Monte Carlo engine will apply a random % deviation to each run.',
+  waccTopLevel: 'Your base-case Weighted Average Cost of Capital. This value syncs to the WACC stress variable mean. The Monte Carlo engine will sample around this value based on the WACC stress variable distribution.',
+  fcfDeviation: 'Random percentage deviation applied to each year\'s FCFF projection in every simulation run. Mean = 0% (unbiased), StdDev controls how much the projections vary across runs.',
   bear: 'Bear case price target ($). Histogram bars below this price are colored red. Represents the downside scenario threshold.',
   base: 'Base case price target ($). Represents your primary valuation estimate. The simulation mean should be near this level if inputs are calibrated correctly.',
   bull: 'Bull case price target ($). Histogram bars above this price are colored red (right tail). Represents the upside scenario threshold.',
@@ -118,6 +126,8 @@ export const ERRORS = {
   invalidJson: 'Invalid config file — please check format and try again.',
   noSimulationResults: 'Run the simulation before exporting.',
   negativeFcf: 'Negative FCF detected — ensure this is expected for this company.',
+  fcfProjectionsRequired: 'At least one FCFF projection must be non-zero in Direct mode.',
+  waccRange: 'WACC must be between 1% and 50%.',
   lowVariance: 'Low variance: standard deviation is very small. Consider widening SD for meaningful simulation.',
 } as const;
 

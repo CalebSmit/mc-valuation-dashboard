@@ -15,6 +15,7 @@ export interface SimulationResult {
   exitMultiple: number;
   taxRate: number;
   year1GrowthPremium: number;
+  fcfDeviation: number;
   impliedEV: number;     // $M
   impliedPrice: number;  // $ per share
 }

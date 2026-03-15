@@ -91,6 +91,37 @@ describe('validateInputs', () => {
     expect(result.errors['seed']).toBeDefined();
   });
 
+  it('returns error for all-zero fcfProjections in direct mode', () => {
+    const inputs: SimulationInputs = {
+      ...DEFAULT_INPUTS,
+      projectionMode: 'direct',
+      fcfProjections: [0, 0, 0, 0, 0],
+      wacc: 0.10,
+    };
+    const result = validateInputs(inputs, DEFAULT_STRESS_VARS, DEFAULT_SCENARIO, DEFAULT_CONFIG);
+    expect(result.valid).toBe(false);
+    expect(result.errors['fcfProjections']).toBeDefined();
+  });
+
+  it('does not require ttmRevenue > 0 in direct mode', () => {
+    const inputs: SimulationInputs = {
+      ...DEFAULT_INPUTS,
+      projectionMode: 'direct',
+      fcfProjections: [100, 110, 120, 130, 140],
+      wacc: 0.10,
+      ttmRevenue: 0,
+    };
+    const result = validateInputs(inputs, DEFAULT_STRESS_VARS, DEFAULT_SCENARIO, DEFAULT_CONFIG);
+    expect(result.errors['ttmRevenue']).toBeUndefined();
+  });
+
+  it('returns error for WACC out of bounds', () => {
+    const inputs: SimulationInputs = { ...DEFAULT_INPUTS, wacc: 0.005 }; // 0.5% — below 1% minimum
+    const result = validateInputs(inputs, DEFAULT_STRESS_VARS, DEFAULT_SCENARIO, DEFAULT_CONFIG);
+    expect(result.valid).toBe(false);
+    expect(result.errors['waccInput']).toBeDefined();
+  });
+
   it('returns all errors at once (not fail-fast)', () => {
     const inputs: SimulationInputs = { ...DEFAULT_INPUTS, sharesOutstanding: 0, currentPrice: 0, ttmRevenue: 0 };
     const scenario: ScenarioTargets = { bear: 150, base: 100, bull: 80 };

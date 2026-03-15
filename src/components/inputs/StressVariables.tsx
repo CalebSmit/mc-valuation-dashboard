@@ -8,33 +8,41 @@ import { SECTION_TITLES, STRESS_GROUP_LABELS } from '../../constants/labels';
 
 export function StressVariables() {
   const stressVars = useInputsStore(s => s.stressVars);
+  const projectionMode = useInputsStore(s => s.inputs.projectionMode);
   const [incomeOpen, setIncomeOpen] = useState(true);
   const [valuationOpen, setValuationOpen] = useState(true);
+  const [cashFlowOpen, setCashFlowOpen] = useState(true);
 
   const incomeVars = stressVars.filter(v => v.group === 'incomeStatement');
   const valuationVars = stressVars.filter(v => v.group === 'valuation');
+  const cashFlowVars = stressVars.filter(v => v.group === 'cashFlow');
   const activeIncomeCount = incomeVars.filter(v => v.enabled).length;
   const activeValuationCount = valuationVars.filter(v => v.enabled).length;
+  const activeCashFlowCount = cashFlowVars.filter(v => v.enabled).length;
 
   return (
     <SectionCard title={SECTION_TITLES.stressVars}>
-      {/* Group A: Income Statement Drivers */}
-      <GroupHeader
-        label={STRESS_GROUP_LABELS.incomeStatement}
-        open={incomeOpen}
-        onToggle={() => setIncomeOpen(v => !v)}
-        count={incomeVars.length}
-        activeCount={activeIncomeCount}
-      />
-      {incomeOpen && (
-        <div className="mb-2">
-          {incomeVars.map(v => (
-            <StressVariableRow key={v.id} variable={v} />
-          ))}
-        </div>
+      {/* Group A: Income Statement Drivers — only in margin mode */}
+      {projectionMode === 'margin' && (
+        <>
+          <GroupHeader
+            label={STRESS_GROUP_LABELS.incomeStatement}
+            open={incomeOpen}
+            onToggle={() => setIncomeOpen(v => !v)}
+            count={incomeVars.length}
+            activeCount={activeIncomeCount}
+          />
+          {incomeOpen && (
+            <div className="mb-2">
+              {incomeVars.map(v => (
+                <StressVariableRow key={v.id} variable={v} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Group B: Valuation & Cost of Capital */}
+      {/* Group B: Valuation & Cost of Capital — always visible */}
       <GroupHeader
         label={STRESS_GROUP_LABELS.valuation}
         open={valuationOpen}
@@ -43,11 +51,31 @@ export function StressVariables() {
         activeCount={activeValuationCount}
       />
       {valuationOpen && (
-        <div>
+        <div className="mb-2">
           {valuationVars.map(v => (
             <StressVariableRow key={v.id} variable={v} />
           ))}
         </div>
+      )}
+
+      {/* Group C: Direct FCFF Stress — only in direct mode */}
+      {projectionMode === 'direct' && (
+        <>
+          <GroupHeader
+            label={STRESS_GROUP_LABELS.cashFlow}
+            open={cashFlowOpen}
+            onToggle={() => setCashFlowOpen(v => !v)}
+            count={cashFlowVars.length}
+            activeCount={activeCashFlowCount}
+          />
+          {cashFlowOpen && (
+            <div>
+              {cashFlowVars.map(v => (
+                <StressVariableRow key={v.id} variable={v} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </SectionCard>
   );

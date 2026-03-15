@@ -22,6 +22,7 @@ const CSV_VARIABLE_COLUMNS: Record<StressVariableId, { header: string; getValue:
   exitMultiple: { header: 'ExitMultiple', getValue: record => record.exitMultiple },
   taxRate: { header: 'TaxRate', getValue: record => record.taxRate },
   year1GrowthPremium: { header: 'Year1GrowthPremium', getValue: record => record.year1GrowthPremium },
+  fcfDeviation: { header: 'FCFDeviation', getValue: record => record.fcfDeviation },
 };
 
 function buildCsvRows(records: SimulationResult[], activeVariableIds: StressVariableId[]): Record<string, number>[] {
@@ -69,6 +70,7 @@ describe('exportCSV row shape', () => {
       'ExitMultiple',
       'TaxRate',
       'Year1GrowthPremium',
+      'FCFDeviation',
       'ImpliedEV',
       'ImpliedPrice',
     ];

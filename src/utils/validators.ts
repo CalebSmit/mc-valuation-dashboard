@@ -36,13 +36,28 @@ export function validateInputs(
     errors['currentPrice'] = ERRORS.currentPriceRequired;
   }
 
-  if (!inputs.ttmRevenue || inputs.ttmRevenue <= 0) {
-    errors['ttmRevenue'] = ERRORS.revenueRequired;
+  // TTM Revenue required in margin mode; in direct mode it's informational
+  if (inputs.projectionMode !== 'direct') {
+    if (!inputs.ttmRevenue || inputs.ttmRevenue <= 0) {
+      errors['ttmRevenue'] = ERRORS.revenueRequired;
+    }
   }
 
   // Negative FCF warning (not a blocking error)
   if (inputs.ttmFcf < 0) {
     warnings['ttmFcf'] = ERRORS.negativeFcf;
+  }
+
+  // ── Direct FCFF mode: at least one projection must be non-zero ──
+  if (inputs.projectionMode === 'direct') {
+    if (!inputs.fcfProjections || inputs.fcfProjections.every(v => v === 0)) {
+      errors['fcfProjections'] = ERRORS.fcfProjectionsRequired;
+    }
+  }
+
+  // ── WACC bounds check ──
+  if (inputs.wacc < BOUNDS.wacc.min || inputs.wacc > BOUNDS.wacc.max) {
+    errors['waccInput'] = ERRORS.waccRange;
   }
 
   // ── Scenario Targets ──

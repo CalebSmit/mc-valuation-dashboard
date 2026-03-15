@@ -14,6 +14,7 @@ const BASE_SAMPLED: SampledVariables = {
   exitMultiple:       12.0,
   taxRate:            0.25,  // 25%
   year1GrowthPremium: 0.00,
+  fcfDeviation:       0.00,
 };
 
 describe('dcfEngine', () => {
@@ -48,5 +49,58 @@ describe('dcfEngine', () => {
     const premiumSampled = { ...BASE_SAMPLED, year1GrowthPremium: 0.05 }; // +5%
     const premiumPrice = computeDCF(DEFAULT_INPUTS, premiumSampled, 'ggm');
     expect(premiumPrice).toBeGreaterThan(basePrice);
+  });
+});
+
+// ─── Direct FCFF Mode Tests ──────────────────────────────────────────────────
+
+describe('dcfEngine — direct FCFF mode', () => {
+  const directInputs = {
+    ...DEFAULT_INPUTS,
+    projectionMode: 'direct' as const,
+    fcfProjections: [100, 110, 120, 130, 140], // $M per year
+    wacc: 0.10,
+  };
+
+  const directSampled: SampledVariables = {
+    ...BASE_SAMPLED,
+    fcfDeviation: 0, // no deviation — should use exact projections
+  };
+
+  it('returns positive price with user-entered FCF projections and zero deviation', () => {
+    const price = computeDCF(directInputs, directSampled, 'ggm');
+    expect(price).not.toBeNaN();
+    expect(price).toBeGreaterThan(0);
+  });
+
+  it('fcfDeviation=0 produces deterministic output matching manual PV calculation', () => {
+    const price = computeDCF(directInputs, directSampled, 'ggm');
+    // Manual PV: sum of FCF/(1.10)^t + TV/(1.10)^5
+    // TV = 140 * (1.025) / (0.10 - 0.025) = 140 * 1.025 / 0.075 = 1913.33
+    const wacc = 0.10;
+    const tgr = 0.025;
+    let pvManual = 0;
+    const fcfs = [100, 110, 120, 130, 140];
+    for (let t = 1; t <= 5; t++) {
+      pvManual += fcfs[t - 1] / Math.pow(1 + wacc, t);
+    }
+    const tv = 140 * (1 + tgr) / (wacc - tgr);
+    pvManual += tv / Math.pow(1 + wacc, 5);
+    const equity = pvManual - directInputs.totalDebt + directInputs.cashAndEquiv;
+    const expectedPrice = equity / directInputs.sharesOutstanding;
+    expect(price).toBeCloseTo(expectedPrice, 2);
+  });
+
+  it('positive fcfDeviation increases price vs. zero deviation', () => {
+    const basePrice = computeDCF(directInputs, directSampled, 'ggm');
+    const upSampled = { ...directSampled, fcfDeviation: 0.10 }; // +10%
+    const upPrice = computeDCF(directInputs, upSampled, 'ggm');
+    expect(upPrice).toBeGreaterThan(basePrice);
+  });
+
+  it('exit multiple TV uses ttmEbitda in direct mode', () => {
+    const price = computeDCF(directInputs, directSampled, 'exitMultiple');
+    expect(price).not.toBeNaN();
+    expect(price).toBeGreaterThan(0);
   });
 });

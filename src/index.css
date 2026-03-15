@@ -595,9 +595,65 @@ input[type='range']::-moz-range-thumb {
 }
 
 .output-tabs-sidebar {
-  width: 260px;
-  border-left: 1px solid var(--color-border);
+  width: 100%;
+  max-height: 320px;
+  border-top: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.app-shell-main {
+  overflow: hidden;
+}
+
+.app-shell-input-panel {
+  width: 100%;
+  min-height: 0;
+  height: clamp(340px, 52dvh, 560px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.input-panel-shell {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.output-tabs-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.output-tabs-chart {
+  min-height: 360px;
+}
+
+@media (min-width: 1024px) {
+  .app-shell-input-panel {
+    width: 320px;
+    height: auto;
+    border-bottom: 0;
+  }
+
+  .input-panel-shell {
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+  }
+
+  .output-tabs-content {
+    flex-direction: row;
+  }
+
+  .output-tabs-chart {
+    min-height: 0;
+  }
+
+  .output-tabs-sidebar {
+    width: 260px;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid var(--color-border);
+  }
 }
 
 .input-field-label {

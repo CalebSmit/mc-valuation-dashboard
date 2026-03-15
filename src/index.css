@@ -1119,6 +1119,330 @@ input[type='range']::-moz-range-thumb {
   color: var(--color-text);
 }
 
+/* ─── Guided Setup Wizard ───────────────────────────────────────────────── */
+.wizard-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  width: 90vw;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.wizard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  flex-shrink: 0;
+}
+
+.wizard-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wizard-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: var(--color-text);
+}
+
+.wizard-step-label {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.wizard-progress-track {
+  height: 3px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.wizard-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 300ms ease;
+  border-radius: 0 2px 2px 0;
+}
+
+.wizard-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.wizard-step-intro {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.wizard-sublabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  margin: 0;
+}
+
+/* ── Form Fields ─────────────────────────────────────────────────────── */
+.wizard-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wizard-field-label {
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wizard-field-unit {
+  color: var(--color-text-faint);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.wizard-field-required {
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
+.wizard-field-optional {
+  color: var(--color-text-faint);
+  font-size: 10px;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.wizard-field-hint {
+  color: var(--color-text-faint);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  line-height: 1.4;
+}
+
+.wizard-hint-box {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(240, 180, 41, 0.08);
+  border: 1px solid rgba(240, 180, 41, 0.2);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+/* ── Mode Selection Cards ────────────────────────────────────────────── */
+.wizard-mode-cards {
+  display: flex;
+  gap: 10px;
+}
+
+.wizard-mode-card {
+  flex: 1;
+  padding: 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 150ms ease;
+}
+
+.wizard-mode-card:hover {
+  border-color: var(--color-primary-dim);
+}
+
+.wizard-mode-card-active {
+  border-color: var(--color-primary);
+  background: rgba(240, 180, 41, 0.06);
+}
+
+.wizard-mode-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.wizard-mode-card-active .wizard-mode-card-title {
+  color: var(--color-primary);
+}
+
+.wizard-mode-card-desc {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+/* ── Year Buttons ────────────────────────────────────────────────────── */
+.wizard-yr-btn {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+.wizard-yr-btn-active {
+  background: var(--color-primary);
+  color: var(--color-bg);
+  border-color: var(--color-primary);
+}
+
+.wizard-yr-btn-inactive {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+/* ── FCF Grid ────────────────────────────────────────────────────────── */
+.wizard-fcf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.wizard-fcf-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wizard-fcf-label {
+  color: var(--color-text-faint);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  text-align: center;
+}
+
+/* ── Review Table ────────────────────────────────────────────────────── */
+.wizard-review {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard-review-group {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.wizard-review-group-label {
+  color: var(--color-text-faint);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.wizard-review-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.wizard-review-key {
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.wizard-review-val {
+  color: var(--color-text);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  text-align: right;
+}
+
+/* ── Footer Buttons ──────────────────────────────────────────────────── */
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.wizard-btn {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+}
+
+.wizard-btn-back {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.wizard-btn-back:hover {
+  color: var(--color-text);
+}
+
+.wizard-btn-next {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.wizard-btn-next:hover {
+  opacity: 0.9;
+}
+
+.wizard-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wizard-btn-submit {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.wizard-btn-submit:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .wizard-container {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .wizard-mode-cards {
+    flex-direction: column;
+  }
+}
+
 /* ─── Methodology Modal ─────────────────────────────────────────────────── */
 .method-overlay {
   position: fixed;

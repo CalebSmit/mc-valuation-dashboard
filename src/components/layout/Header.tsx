@@ -6,6 +6,7 @@ import { useExport } from '../../hooks/useExport';
 import { ExportMenu } from '../shared/ExportMenu';
 import { RunButton } from '../shared/RunButton';
 import { MethodologyModal } from '../shared/MethodologyModal';
+import { GuidedSetupWizard } from '../shared/GuidedSetupWizard';
 import { formatLargeNumber, formatPrice } from '../../utils/formatters';
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -18,6 +19,7 @@ export function Header() {
   const elapsedMs = useResultsStore(s => s.elapsedMs);
   const { exportPDF, exportCSV, exportConfig, importConfig } = useExport();
   const [methodOpen, setMethodOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(true);
 
   const impliedMarketCap =
     inputs.currentPrice > 0 && inputs.sharesOutstanding > 0
@@ -118,6 +120,18 @@ export function Header() {
         </span>
       </div>
 
+      {/* ── Guided Setup button ─────────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => setWizardOpen(true)}
+        className="header-guide-btn text-12 px-3 py-2 rounded flex items-center gap-1.5"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="ui-icon-fixed">
+          <path d="M8 1.5 L9.3 5.2 L13.2 5.5 L10.2 8 L11.1 12 L8 10 L4.9 12 L5.8 8 L2.8 5.5 L6.7 5.2Z" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinejoin="round" />
+        </svg>
+        Setup
+      </button>
+
       {/* ── Methodology button ─────────────────────────────────────────── */}
       <button
         type="button"
@@ -154,6 +168,7 @@ export function Header() {
     </header>
 
     <MethodologyModal open={methodOpen} onClose={() => setMethodOpen(false)} />
+    <GuidedSetupWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </>
   );
 }

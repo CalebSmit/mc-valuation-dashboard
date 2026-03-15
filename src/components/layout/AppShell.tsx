@@ -25,14 +25,7 @@ export function AppShell() {
 
   return (
     <div
-      className="flex flex-col"
-      style={{
-        height: '100dvh',
-        minHeight: '100dvh',
-        background: 'var(--color-bg)',
-        color: 'var(--color-text)',
-        overflow: 'hidden',
-      }}
+      className="app-shell-root flex flex-col"
     >
       {/* ── Top navigation bar ──────────────────────────────────────────── */}
       <Header />
@@ -40,7 +33,6 @@ export function AppShell() {
       {/* ── Main content: sidebar + output area ─────────────────────────── */}
       <div
         className="app-shell-main flex flex-1 min-h-0 flex-col lg:flex-row"
-        style={{ overflow: 'hidden' }}
       >
         {/* Input panel — fixed 320px on lg+, full-width stacked on mobile */}
         <div
@@ -52,8 +44,7 @@ export function AppShell() {
         {/* Output area — takes remaining space; id used by html2canvas for PDF export */}
         <div
           id="mc-output-area"
-          className="flex-1 min-w-0 min-h-0 flex flex-col"
-          style={{ background: 'var(--color-bg)' }}
+          className="app-shell-output-area flex-1 min-w-0 min-h-0 flex flex-col"
         >
           <OutputTabs />
         </div>

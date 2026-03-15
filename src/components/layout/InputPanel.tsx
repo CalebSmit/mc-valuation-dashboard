@@ -18,10 +18,6 @@ export function InputPanel() {
   return (
     <div
       className="input-panel-shell flex flex-col h-full"
-      style={{
-        borderRight: '1px solid var(--color-border)',
-        background: 'var(--color-surface)',
-      }}
     >
       {/* ── Scrollable sections ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-2">
@@ -33,24 +29,14 @@ export function InputPanel() {
 
       {/* ── Sticky Run button footer ─────────────────────────────────────── */}
       <div
-        className="flex-shrink-0 px-3 py-3"
-        style={{
-          borderTop: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-        }}
+        className="input-panel-footer flex-shrink-0 px-3 py-3"
       >
         {/* Error banner */}
         {error && (
           <div
             role="alert"
             aria-live="assertive"
-            className="mb-2 px-3 py-2 rounded text-11"
-            style={{
-              background: 'rgba(248,81,73,0.12)',
-              border: '1px solid rgba(248,81,73,0.4)',
-              color: 'var(--color-bear)',
-              fontFamily: 'Space Grotesk',
-            }}
+            className="input-panel-error-banner mb-2 px-3 py-2 rounded text-11"
           >
             ⚠ {error}
           </div>
@@ -61,15 +47,10 @@ export function InputPanel() {
           <div
             role="status"
             aria-live="polite"
-            className="mb-2 px-3 py-2 rounded text-11 space-y-1"
-            style={{
-              background: 'rgba(240,180,41,0.08)',
-              border: '1px solid rgba(240,180,41,0.35)',
-              fontFamily: 'Space Grotesk',
-            }}
+            className="input-panel-warning-banner mb-2 px-3 py-2 rounded text-11 space-y-1"
           >
             {warningList.map((w, i) => (
-              <div key={i} style={{ color: 'var(--color-primary)' }}>
+              <div key={i} className="input-panel-warning-item">
                 ⚠ {w}
               </div>
             ))}
@@ -83,8 +64,7 @@ export function InputPanel() {
         />
 
         <p
-          className="mt-2 text-10 text-center"
-          style={{ color: 'var(--color-text-faint)', fontFamily: 'Space Grotesk' }}
+          className="input-panel-hint mt-2 text-10 text-center"
           aria-live="polite"
         >
           {isRunning

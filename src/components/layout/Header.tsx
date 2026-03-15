@@ -32,19 +32,13 @@ export function Header() {
 
   return (
     <header
-      className="flex-shrink-0 flex items-center justify-between px-5 py-3 gap-4"
-      style={{
-        borderBottom: '1px solid var(--color-border)',
-        background: 'var(--color-surface)',
-        height: '56px',
-      }}
+      className="header-shell flex-shrink-0 flex items-center justify-between px-5 py-3 gap-4"
     >
       {/* ── Logo / title ──────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 min-w-0">
         {/* Logo mark */}
         <div
-          className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded"
-          style={{ background: 'rgba(240,180,41,0.15)', border: '1px solid rgba(240,180,41,0.3)' }}
+          className="header-logo-mark flex-shrink-0 flex items-center justify-center w-8 h-8 rounded"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M2 14 L5 8 L8 11 L11 5 L14 2" stroke="#f0b429" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -54,14 +48,12 @@ export function Header() {
 
         <div className="min-w-0">
           <div
-            className="text-13 font-semibold truncate"
-            style={{ color: 'var(--color-text)', fontFamily: 'Space Grotesk' }}
+            className="header-title text-13 font-semibold truncate"
           >
             MC Valuation
           </div>
           <div
-            className="text-10 truncate"
-            style={{ color: 'var(--color-text-faint)', fontFamily: 'DM Mono' }}
+            className="header-subtitle text-10 truncate"
           >
             Monte Carlo Equity Dashboard
           </div>
@@ -71,37 +63,32 @@ export function Header() {
       {/* ── Company info ──────────────────────────────────────────────── */}
       {(inputs.companyName || inputs.ticker) && (
         <div
-          className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded min-w-0"
-          style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
+          className="header-company-chip hidden md:flex items-center gap-3 px-3 py-1.5 rounded min-w-0"
         >
           {inputs.ticker && (
             <span
-              className="text-12 font-semibold flex-shrink-0"
-              style={{ color: 'var(--color-primary)', fontFamily: 'DM Mono' }}
+              className="header-company-ticker text-12 font-semibold flex-shrink-0"
             >
               {inputs.ticker}
             </span>
           )}
           {inputs.companyName && (
             <span
-              className="text-12 truncate max-w-32"
-              style={{ color: 'var(--color-text-muted)', fontFamily: 'Space Grotesk' }}
+              className="header-company-name text-12 truncate max-w-32"
             >
               {inputs.companyName}
             </span>
           )}
           {inputs.currentPrice > 0 && (
             <span
-              className="text-12 font-medium flex-shrink-0"
-              style={{ color: 'var(--color-text)', fontFamily: 'DM Mono' }}
+              className="header-company-price text-12 font-medium flex-shrink-0"
             >
               {formatPrice(inputs.currentPrice)}
             </span>
           )}
           {impliedMarketCap != null && (
             <span
-              className="text-11 flex-shrink-0"
-              style={{ color: 'var(--color-text-faint)', fontFamily: 'DM Mono' }}
+              className="header-company-mcap text-11 flex-shrink-0"
             >
               MCap {formatLargeNumber(impliedMarketCap)}
             </span>
@@ -114,24 +101,14 @@ export function Header() {
 
       {/* ── Simulation status ─────────────────────────────────────────── */}
       <div
-        className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded"
-        style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
+        className="header-status hidden sm:flex items-center gap-2 px-3 py-1.5 rounded"
       >
         {/* Status dot */}
         <span
-          className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{
-            background: isRunning
-              ? '#f0b429'
-              : output
-              ? 'var(--color-bull)'
-              : 'var(--color-text-faint)',
-            animation: isRunning ? 'pulse-amber 1s ease-in-out infinite' : 'none',
-          }}
+          className={`header-status-dot w-2 h-2 rounded-full flex-shrink-0 ${isRunning ? 'header-status-dot-running' : output ? 'header-status-dot-complete' : 'header-status-dot-idle'}`}
         />
         <span
-          className="text-11"
-          style={{ color: 'var(--color-text-muted)', fontFamily: 'DM Mono', whiteSpace: 'nowrap' }}
+          className="header-status-text text-11"
         >
           {statusText}
         </span>
@@ -147,7 +124,7 @@ export function Header() {
       />
 
       {/* ── Run button (compact) ──────────────────────────────────────── */}
-      <div className="flex-shrink-0" style={{ width: '110px' }}>
+      <div className="header-run-button-wrap flex-shrink-0">
         <RunButton
           onRun={isRunning ? abort : runSimulation}
           isRunning={isRunning}

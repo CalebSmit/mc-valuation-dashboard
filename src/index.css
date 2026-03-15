@@ -601,8 +601,20 @@ input[type='range']::-moz-range-thumb {
   background: var(--color-surface);
 }
 
+.app-shell-root {
+  height: 100dvh;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
 .app-shell-main {
   overflow: hidden;
+}
+
+.app-shell-output-area {
+  background: var(--color-bg);
 }
 
 .app-shell-input-panel {
@@ -616,6 +628,35 @@ input[type='range']::-moz-range-thumb {
   width: 100%;
   min-width: 0;
   max-width: none;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.input-panel-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.input-panel-error-banner {
+  background: rgba(248,81,73,0.12);
+  border: 1px solid rgba(248,81,73,0.4);
+  color: var(--color-bear);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.input-panel-warning-banner {
+  background: rgba(240,180,41,0.08);
+  border: 1px solid rgba(240,180,41,0.35);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.input-panel-warning-item {
+  color: var(--color-primary);
+}
+
+.input-panel-hint {
+  color: var(--color-text-faint);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 
 .output-tabs-content {
@@ -654,6 +695,76 @@ input[type='range']::-moz-range-thumb {
     border-top: 0;
     border-left: 1px solid var(--color-border);
   }
+}
+
+.header-shell {
+  height: 56px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.header-logo-mark {
+  background: rgba(240,180,41,0.15);
+  border: 1px solid rgba(240,180,41,0.3);
+}
+
+.header-title {
+  color: var(--color-text);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.header-subtitle {
+  color: var(--color-text-faint);
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+.header-company-chip,
+.header-status {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.header-company-ticker {
+  color: var(--color-primary);
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+.header-company-name {
+  color: var(--color-text-muted);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.header-company-price {
+  color: var(--color-text);
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+.header-company-mcap {
+  color: var(--color-text-faint);
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+.header-status-dot-idle {
+  background: var(--color-text-faint);
+}
+
+.header-status-dot-complete {
+  background: var(--color-bull);
+}
+
+.header-status-dot-running {
+  background: var(--color-primary);
+  animation: pulse-amber 1s ease-in-out infinite;
+}
+
+.header-status-text {
+  color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.header-run-button-wrap {
+  width: 110px;
 }
 
 .input-field-label {
